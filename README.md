@@ -7,7 +7,9 @@ CabKit3D is a Vite + React + Three.js playground for experimenting with parametr
 - Adjustable width, height, depth, carcass thickness, back panel thickness, shelf count, gaps, and door thickness
 - Single or double doors with handle presets (bar, knob, no hardware) plus hinge side selection for single doors
 - Exploded slider and optional turntable animation for reviewing joinery
+- Instanced cabinet geometry rendered with MeshPhysicalMaterial presets for melamine, paint, and veneer finishes
 - Live price estimate based on a simple area-driven BOM model with shelf + hinge adjustments
+- Constraint validation (errors + warnings) plus local preset persistence via `localStorage`
 - Instant SKU string (`CAB-600x720x560-ML-HB-D2-S2-HL`) plus downloadable JSON payload
 - Clean modular components using @react-three/fiber, drei helpers, and Framer Motion transitions
 
@@ -49,6 +51,7 @@ src/
     cabinetMath.js
     pricing.js
     sku.js
+    validation.js
 ```
 
 ## SKU JSON Export
@@ -101,9 +104,11 @@ The estimate converts millimeters to square meters, multiplies carcass and door 
 ## Performance Notes
 
 - Canvas defaults to `frameloop="demand"` and only animates continuously when exploding or running the turntable
-- Simple `meshStandardMaterial` placeholders for now; swap for instanced GLTF parts or merged geometries if needed
+- Instanced meshes reuse a shared unit cube + MeshPhysicalMaterial palette to keep draw calls low even with shelves/handles
+- HDRI lighting streams lazily from Poly Haven (`studio_small_08_1k.hdr`), so it stays out of the main bundle
 - Drei `StatsGl` is only enabled in development (`import.meta.env.DEV`)
+- Controls auto-save to `localStorage`, and named presets persist between sessions; delete/reset from the Presets panel as needed
 
 ## License
 
-MIT (c) 2025 Your Name
+MIT (c) 2025 iMilky

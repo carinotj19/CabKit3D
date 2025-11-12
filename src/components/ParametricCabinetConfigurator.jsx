@@ -1,10 +1,11 @@
-﻿import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import SceneCanvas from './SceneCanvas';
 import CabinetModel from './CabinetModel';
 import ControlsPanel from './ui/ControlsPanel';
 import { estimatePrice } from '../lib/pricing';
 import { generateSKU, buildSKUObject } from '../lib/sku';
+import { validateParams } from '../lib/validation';
 
 const DEFAULT_PARAMS = {
   width: 600,
@@ -33,20 +34,60 @@ const LIMITS = {
   shelfCount: [0, 8],
 };
 
+const STORAGE_KEYS = {
+  lastParams: 'cabkit3d:lastParams',
+  presets: 'cabkit3d:presets',
+};
+
 export default function ParametricCabinetConfigurator() {
-  const [params, setParams] = useState(DEFAULT_PARAMS);
+  const [params, setParams] = useState(() => readStorage(STORAGE_KEYS.lastParams, DEFAULT_PARAMS));
   const [exploded, setExploded] = useState(0);
   const [turntable, setTurntable] = useState(false);
+  const [presets, setPresets] = useState(() => readStorage(STORAGE_KEYS.presets, {}));
 
   const safeParams = useMemo(() => clampParams(params), [params]);
-
   const price = useMemo(() => estimatePrice(safeParams), [safeParams]);
   const sku = useMemo(() => generateSKU(safeParams), [safeParams]);
+  const validation = useMemo(() => validateParams(safeParams), [safeParams]);
+  const hasBlockingErrors = validation.some((rule) => rule.level === 'error');
 
   const animateCanvas = turntable || exploded > 0.001;
 
   const handleParamChange = useCallback((patch) => {
     setParams((current) => ({ ...current, ...patch }));
+  }, []);
+
+  const handlePresetSave = useCallback((name) => {
+    if (!name) return false;
+    setPresets((current) => ({
+      ...current,
+      [name]: safeParams,
+    }));
+    return true;
+  }, [safeParams]);
+
+  const handlePresetLoad = useCallback((name) => {
+    setParams((current) => {
+      const preset = presets?.[name];
+      if (!preset) return current;
+      return { ...preset };
+    });
+  }, [presets]);
+
+  const handlePresetDelete = useCallback((name) => {
+    if (!name) return;
+    setPresets((current) => {
+      if (!current[name]) return current;
+      const next = { ...current };
+      delete next[name];
+      return next;
+    });
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setParams(DEFAULT_PARAMS);
+    setExploded(0);
+    setTurntable(false);
   }, []);
 
   const handleExport = useCallback(() => {
@@ -59,6 +100,14 @@ export default function ParametricCabinetConfigurator() {
     anchor.click();
     URL.revokeObjectURL(url);
   }, [safeParams, sku, price]);
+
+  useEffect(() => {
+    writeStorage(STORAGE_KEYS.lastParams, safeParams);
+  }, [safeParams]);
+
+  useEffect(() => {
+    writeStorage(STORAGE_KEYS.presets, presets);
+  }, [presets]);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', height: '100dvh' }}>
@@ -81,6 +130,13 @@ export default function ParametricCabinetConfigurator() {
             sku={sku}
             price={price.total}
             onExport={handleExport}
+            validation={validation}
+            hasBlockingErrors={hasBlockingErrors}
+            presets={presets}
+            onPresetSave={handlePresetSave}
+            onPresetLoad={handlePresetLoad}
+            onPresetDelete={handlePresetDelete}
+            onReset={handleReset}
           />
         </motion.div>
       </AnimatePresence>
@@ -105,6 +161,9 @@ export default function ParametricCabinetConfigurator() {
         >
           <div><strong>SKU:</strong> {sku}</div>
           <div><strong>Estimate:</strong> ${price.total.toFixed(2)}</div>
+          {hasBlockingErrors ? (
+            <div style={{ color: '#c53030', marginTop: 6 }}>Resolve errors before exporting.</div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -115,10 +174,7 @@ function clampParams(p) {
   const next = { ...p };
   Object.entries(LIMITS).forEach(([key, [min, max]]) => {
     next[key] = clamp(next[key], min, max);
-    if (key === 'doorCount') {
-      next[key] = Math.round(next[key]);
-    }
-    if (key === 'shelfCount') {
+    if (key === 'doorCount' || key === 'shelfCount') {
       next[key] = Math.round(next[key]);
     }
   });
@@ -128,4 +184,23 @@ function clampParams(p) {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value) || 0));
+}
+
+function readStorage(key, fallback) {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStorage(key, value) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore storage errors (private mode, quota, etc.)
+  }
 }

@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 
 export default function ControlsPanel({
@@ -10,10 +11,46 @@ export default function ControlsPanel({
   sku,
   price,
   onExport,
+  validation = [],
+  hasBlockingErrors = false,
+  presets = {},
+  onPresetSave,
+  onPresetLoad,
+  onPresetDelete,
+  onReset,
 }) {
   const handleNumber = (key) => (event) => {
     const value = Number(event.target.value);
     onChange({ [key]: value });
+  };
+  const [presetName, setPresetName] = useState('');
+  const [selectedPreset, setSelectedPreset] = useState('');
+  const presetNames = useMemo(
+    () => Object.keys(presets).sort((a, b) => a.localeCompare(b)),
+    [presets],
+  );
+
+  const handleSavePreset = () => {
+    const trimmed = presetName.trim();
+    if (!trimmed) return;
+    const result = onPresetSave?.(trimmed);
+    if (result !== false) {
+      setSelectedPreset(trimmed);
+      setPresetName('');
+    }
+  };
+
+  const handleLoadPreset = (name) => {
+    setSelectedPreset(name);
+    if (name) {
+      onPresetLoad?.(name);
+    }
+  };
+
+  const handleDeletePreset = () => {
+    if (!selectedPreset) return;
+    onPresetDelete?.(selectedPreset);
+    setSelectedPreset('');
   };
 
   return (
@@ -109,7 +146,56 @@ export default function ControlsPanel({
         <div style={{ display: 'grid', gap: 8 }}>
           <div><strong>SKU:</strong> {sku}</div>
           <div><strong>Estimate:</strong> ${price.toFixed(2)}</div>
-          <button onClick={onExport}>Download SKU JSON</button>
+          <button onClick={onExport} disabled={hasBlockingErrors}>Download SKU JSON</button>
+          {hasBlockingErrors ? (
+            <small style={{ color: '#c53030' }}>Fix blocking errors to export.</small>
+          ) : null}
+        </div>
+      </Section>
+
+      <Section title="Validation">
+        {validation.length === 0 ? (
+          <p style={{ margin: 0, color: '#16a34a', fontSize: 14 }}>All constraints satisfied.</p>
+        ) : (
+          <ul style={{ margin: 0, paddingLeft: 18, color: '#475569', fontSize: 13, display: 'grid', gap: 6 }}>
+            {validation.map((rule) => (
+              <li
+                key={rule.id}
+                style={{ color: rule.level === 'error' ? '#c53030' : '#d97706' }}
+              >
+                {rule.message}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      <Section title="Presets">
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              placeholder="New preset name"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db' }}
+            />
+            <button onClick={handleSavePreset}>Save</button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <select
+              value={selectedPreset}
+              onChange={(e) => handleLoadPreset(e.target.value)}
+              style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid #d1d5db' }}
+            >
+              <option value="">Load preset...</option>
+              {presetNames.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            <button onClick={handleDeletePreset} disabled={!selectedPreset}>Delete</button>
+          </div>
+          <button onClick={onReset}>Reset to defaults</button>
         </div>
       </Section>
     </div>

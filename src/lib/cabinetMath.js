@@ -148,6 +148,7 @@ function addHandle(parts, type, door, suffix = '', options = {}) {
   const { hingeSide = 'LEFT', isSingleDoor = false } = options;
   const edgeDirection = resolveHandleDirection(door.x, hingeSide, isSingleDoor);
   const handleX = door.x + (door.width / 2 - HANDLE_MARGIN) * edgeDirection;
+  const handleKind = type === 'HB' ? 'handle-bar' : 'handle-knob';
 
   if (type === 'HB') {
     const min = 0.096;
@@ -159,7 +160,7 @@ function addHandle(parts, type, door, suffix = '', options = {}) {
 
     parts.push({
       key: `handle-bar-${suffix}`,
-      kind: 'handle',
+      kind: handleKind,
       size: new Vector3(length, diameter, diameter),
       position: new Vector3(handleX, barY, door.z + offsetZ),
       rotation: new Euler(Math.PI / 2, 0, 0),
@@ -171,7 +172,7 @@ function addHandle(parts, type, door, suffix = '', options = {}) {
 
     parts.push({
       key: `handle-knob-${suffix}`,
-      kind: 'handle',
+      kind: handleKind,
       size: new Vector3(size, size, size),
       position: new Vector3(handleX, knobY, door.z + offsetZ),
       rotation: new Euler(0, 0, 0),

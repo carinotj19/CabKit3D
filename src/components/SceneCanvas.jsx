@@ -1,6 +1,8 @@
 ﻿import { Canvas, useThree } from '@react-three/fiber';
-import { Environment, OrbitControls, StatsGl } from '@react-three/drei';
-import { useEffect } from 'react';
+import { OrbitControls, StatsGl } from '@react-three/drei';
+import { Suspense, lazy, useEffect } from 'react';
+
+const HDRIEnvironment = lazy(() => import('./environment/HDRIEnvironment'));
 
 function InvalidateOnControls() {
   const { invalidate, controls } = useThree((state) => ({
@@ -34,7 +36,9 @@ export default function SceneCanvas({ children, animate }) {
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
-      <Environment preset="warehouse" />
+      <Suspense fallback={null}>
+        <HDRIEnvironment />
+      </Suspense>
       <OrbitControls makeDefault enablePan={false} minDistance={0.6} maxDistance={6} />
       <InvalidateOnControls />
 
