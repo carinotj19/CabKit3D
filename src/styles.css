@@ -1,0 +1,30 @@
+﻿html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: #f4f6fb;
+  color: #111;
+}
+
+button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+}
+
+select,
+input[type='number'],
+input[type='range'] {
+  font-size: 14px;
+}
