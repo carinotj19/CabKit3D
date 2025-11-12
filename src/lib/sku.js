@@ -15,7 +15,7 @@ export function generateSKU(params) {
   return `CAB-${size}-${material}-${handle}-D${doorCount}-${shelves}-H${hingeCode}`;
 }
 
-export function buildSKUObject(params, sku, price) {
+export function buildSKUObject(params, sku, price, bom = []) {
   return {
     sku,
     params,
@@ -24,5 +24,6 @@ export function buildSKUObject(params, sku, price) {
     breakdown: price.breakdown ?? null,
     timestamp: new Date().toISOString(),
     version: 1,
+    bom,
   };
 }

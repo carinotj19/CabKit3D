@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { PRICING_PRESETS } from '../../lib/pricingPresets';
+import PricingBreakdownChart from './PricingBreakdownChart';
 
 const RULE_FIELD_MAP = {
   'double-door-width': ['width'],
@@ -9,6 +11,8 @@ const RULE_FIELD_MAP = {
   'door-gap': ['gap'],
 };
 
+const PRESET_OPTIONS = Object.values(PRICING_PRESETS);
+
 export default function ControlsPanel({
   params,
   onChange,
@@ -17,8 +21,9 @@ export default function ControlsPanel({
   turntable,
   onTurntable,
   sku,
-  price,
+  price = { total: 0, currency: 'USD', symbol: '$', breakdown: {} },
   onExport,
+  onExportCsv,
   validation = [],
   hasBlockingErrors = false,
   presets = {},
@@ -28,6 +33,7 @@ export default function ControlsPanel({
   onReset,
   autoFixes = {},
   onAutoFix,
+  pricingPreset = 'US_STD',
 }) {
   const handleNumber = (key) => (event) => {
     const value = Number(event.target.value);
@@ -190,12 +196,34 @@ export default function ControlsPanel({
       <Section title="Summary">
         <div style={{ display: 'grid', gap: 8 }}>
           <div><strong>SKU:</strong> {sku}</div>
-          <div><strong>Estimate:</strong> ${price.toFixed(2)}</div>
+          <div><strong>Estimate:</strong> {price.symbol}{price.total.toFixed(2)} {price.currency}</div>
           <button onClick={onExport} disabled={hasBlockingErrors}>Download SKU JSON</button>
+          <button onClick={onExportCsv}>Download BOM CSV</button>
           {hasBlockingErrors ? (
             <small style={{ color: '#c53030' }}>Fix blocking errors to export.</small>
           ) : null}
         </div>
+      </Section>
+
+      <Section title="Pricing">
+        <Row label="Preset">
+          <select
+            value={pricingPreset}
+            onChange={(e) => onChange({ pricingPreset: e.target.value })}
+          >
+            {PRESET_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>{option.label}</option>
+            ))}
+          </select>
+        </Row>
+        <Row label="Currency">
+          <div>{price.currency} ({price.symbol})</div>
+        </Row>
+        <PricingBreakdownChart
+          breakdown={price.breakdown}
+          total={price.total}
+          currencySymbol={price.symbol}
+        />
       </Section>
 
       <Section title="Validation">

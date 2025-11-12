@@ -10,6 +10,8 @@ import { getCabinetParts } from '../lib/cabinetMath';
 import SceneAnnotations from './SceneAnnotations';
 import ShortcutsOverlay from './ShortcutsOverlay';
 import ShortcutsHelper from './ui/ShortcutsHelper';
+import { buildBillOfMaterials, buildBOMCsv } from '../lib/bom';
+import { getPricingPreset } from '../lib/pricingPresets';
 
 const DEFAULT_PARAMS = {
   width: 600,
@@ -26,6 +28,7 @@ const DEFAULT_PARAMS = {
   hingeSide: 'LEFT',
   handlePosition: 'middle',
   handleOrientation: 'horizontal',
+  pricingPreset: 'US_STD',
 };
 
 const LIMITS = {
@@ -79,7 +82,8 @@ export default function ParametricCabinetConfigurator() {
   const [presets, setPresets] = useState(() => readStorage(STORAGE_KEYS.presets, {}));
 
   const safeParams = useMemo(() => clampParams(params), [params]);
-  const price = useMemo(() => estimatePrice(safeParams), [safeParams]);
+  const preset = useMemo(() => getPricingPreset(safeParams.pricingPreset), [safeParams.pricingPreset]);
+  const price = useMemo(() => estimatePrice(safeParams, preset), [safeParams, preset]);
   const sku = useMemo(() => generateSKU(safeParams), [safeParams]);
   const validation = useMemo(() => validateParams(safeParams), [safeParams]);
   const hasBlockingErrors = validation.some((rule) => rule.level === 'error');
@@ -91,6 +95,7 @@ export default function ParametricCabinetConfigurator() {
     () => getCabinetParts(safeParams, 0),
     [safeParams],
   );
+  const bom = useMemo(() => buildBillOfMaterials(partsBase, safeParams), [partsBase, safeParams]);
 
   const animateCanvas = turntable || exploded > 0.001;
 
@@ -153,7 +158,7 @@ export default function ParametricCabinetConfigurator() {
   }, []);
 
   const handleExport = useCallback(() => {
-    const data = buildSKUObject(safeParams, sku, price);
+    const data = buildSKUObject(safeParams, sku, price, bom);
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -161,7 +166,18 @@ export default function ParametricCabinetConfigurator() {
     anchor.download = `${sku}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
-  }, [safeParams, sku, price]);
+  }, [safeParams, sku, price, bom]);
+
+  const handleExportCsv = useCallback(() => {
+    const csv = buildBOMCsv(bom);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${sku}-bom.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [bom, sku]);
 
   useEffect(() => {
     writeStorage(STORAGE_KEYS.lastParams, safeParams);
@@ -199,8 +215,9 @@ export default function ParametricCabinetConfigurator() {
             turntable={turntable}
             onTurntable={setTurntable}
             sku={sku}
-            price={price.total}
+            price={price}
             onExport={handleExport}
+            onExportCsv={handleExportCsv}
             validation={validation}
             hasBlockingErrors={hasBlockingErrors}
             presets={presets}
@@ -210,6 +227,7 @@ export default function ParametricCabinetConfigurator() {
             onReset={handleReset}
             autoFixes={AUTO_FIXES}
             onAutoFix={handleAutoFix}
+            pricingPreset={safeParams.pricingPreset}
           />
         </motion.div>
       </AnimatePresence>
@@ -265,6 +283,7 @@ function clampParams(p) {
   next.hingeSide = next.hingeSide === 'RIGHT' ? 'RIGHT' : 'LEFT';
   next.handlePosition = normalizeHandlePosition(next.handlePosition);
   next.handleOrientation = normalizeHandleOrientation(next.handleOrientation);
+  next.pricingPreset = normalizePricingPreset(next.pricingPreset);
   return next;
 }
 
@@ -286,6 +305,11 @@ function normalizeHandleOrientation(value) {
     return value.toLowerCase();
   }
   return 'horizontal';
+}
+
+function normalizePricingPreset(value) {
+  const preset = getPricingPreset(value);
+  return preset.id;
 }
 
 function readStorage(key, fallback) {

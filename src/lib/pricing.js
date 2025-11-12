@@ -1,3 +1,5 @@
+import { getPricingPreset } from './pricingPresets';
+
 const MATERIAL_RATE_PER_M2 = {
   ML: 18,
   PN: 26,
@@ -17,7 +19,15 @@ const SHELF_RATE_PER_M2 = 14;
 const SHELF_HARDWARE = 1.5;
 const RIGHT_HINGE_PREMIUM = 2;
 
-export function estimatePrice(params) {
+const PANEL_KEYS = ['carcassCost', 'backCost', 'doorCost', 'shelfCost'];
+
+export function estimatePrice(params, presetOverride) {
+  const preset = presetOverride || getPricingPreset(params.pricingPreset);
+  const materialFactor = preset.materialMultiplier ?? 1;
+  const laborFactor = preset.laborMultiplier ?? 1;
+  const regionMarkupRate = preset.regionMarkup ?? 0;
+  const exchangeRate = preset.exchangeRate ?? 1;
+
   const {
     width,
     height,
@@ -40,33 +50,63 @@ export function estimatePrice(params) {
 
   const doorFaceArea = doorCount === 1 ? width * height : (width / 2) * height * 2;
 
-  const carcassCost = mm2ToM2(carcassArea) * MATERIAL_RATE_PER_M2[material];
-  const backCost = mm2ToM2(backArea) * BACK_RATE_PER_M2;
-  const doorCost = mm2ToM2(doorFaceArea) * MATERIAL_RATE_PER_M2[material] * DOOR_RATE_MULTIPLIER;
+  const baseCarcass = mm2ToM2(carcassArea) * MATERIAL_RATE_PER_M2[material];
+  const baseBack = mm2ToM2(backArea) * BACK_RATE_PER_M2;
+  const baseDoor = mm2ToM2(doorFaceArea) * MATERIAL_RATE_PER_M2[material] * DOOR_RATE_MULTIPLIER;
   const handleCost = doorCount * (HANDLE_COST[handle] ?? 0);
   const hingeCost = doorCount * HINGE_COST_PER_DOOR;
 
   const shelfQty = Math.max(0, Math.floor(shelfCount));
   const shelfArea = Math.max((width - 2 * thickness), 0) * Math.max((depth - thickness), 0);
-  const shelfCost = shelfQty * mm2ToM2(shelfArea) * SHELF_RATE_PER_M2;
+  const baseShelf = shelfQty * mm2ToM2(shelfArea) * SHELF_RATE_PER_M2;
   const shelfHardware = shelfQty * SHELF_HARDWARE;
 
   const hingeSideAdjustment = doorCount === 1 && hingeSide === 'RIGHT' ? RIGHT_HINGE_PREMIUM : 0;
 
-  const total = carcassCost + backCost + doorCost + handleCost + hingeCost + shelfCost + shelfHardware + hingeSideAdjustment + ASSEMBLY_COST;
+  const carcassCost = baseCarcass * materialFactor;
+  const backCost = baseBack * materialFactor;
+  const doorCost = baseDoor * materialFactor;
+  const shelfCost = baseShelf * materialFactor;
+  const assemblyCost = ASSEMBLY_COST * laborFactor;
+
+  const subtotal =
+    carcassCost +
+    backCost +
+    doorCost +
+    handleCost +
+    hingeCost +
+    shelfCost +
+    shelfHardware +
+    hingeSideAdjustment +
+    assemblyCost;
+
+  const regionMarkupValue = subtotal * regionMarkupRate;
+  const totalBase = subtotal + regionMarkupValue;
+
+  const convert = (value) => Math.round(value * exchangeRate * 100) / 100;
+
+  const breakdown = {
+    carcassCost,
+    backCost,
+    doorCost,
+    handleCost,
+    hingeCost,
+    shelfCost,
+    shelfHardware,
+    hingeSideAdjustment,
+    assembly: assemblyCost,
+    regionMarkup: regionMarkupValue,
+  };
+
+  const convertedBreakdown = Object.fromEntries(
+    Object.entries(breakdown).map(([key, value]) => [key, convert(value)]),
+  );
 
   return {
-    total,
-    breakdown: {
-      carcassCost,
-      backCost,
-      doorCost,
-      handleCost,
-      hingeCost,
-      shelfCost,
-      shelfHardware,
-      hingeSideAdjustment,
-      assembly: ASSEMBLY_COST,
-    },
+    total: convert(totalBase),
+    currency: preset.currency,
+    symbol: preset.currencySymbol,
+    presetId: preset.id,
+    breakdown: convertedBreakdown,
   };
 }

@@ -8,6 +8,7 @@ CabKit3D is a Vite + React + Three.js playground for experimenting with parametr
 - Single or double doors with handle presets (bar, knob, no hardware) plus hinge side selection for single doors
 - Handle placement controls (top/middle/bottom) plus orientation options (X/Y/Z) for better ergonomic previews
 - Keyboard shortcuts (arrow/shift/alt + space) with quick-start overlay for power users
+- SKU export bundles a BOM-lite array, and a separate BOM CSV download is available for manufacturing estimates
 - Exploded slider and optional turntable animation for reviewing joinery
 - Instanced cabinet geometry rendered with MeshPhysicalMaterial presets for melamine, paint, and veneer finishes plus baked AO/lightmaps
 - Live price estimate based on a simple area-driven BOM model with shelf + hinge adjustments
