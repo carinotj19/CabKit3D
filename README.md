@@ -10,7 +10,7 @@ CabKit3D is a Vite + React + Three.js playground for experimenting with parametr
 - Exploded slider and optional turntable animation for reviewing joinery
 - Instanced cabinet geometry rendered with MeshPhysicalMaterial presets for melamine, paint, and veneer finishes plus baked AO/lightmaps
 - Live price estimate based on a simple area-driven BOM model with shelf + hinge adjustments
-- Constraint validation (errors + warnings) plus local preset persistence via `localStorage`
+- Constraint validation (errors + warnings) with inline hints + auto-fix buttons, plus local preset persistence via `localStorage`
 - Spatial annotations (dimension glyphs, hinge callouts, exploded-part trails) so parametric changes are visually explainable
 - Instant SKU string (`CAB-600x720x560-ML-HB-D2-S2-HL`) plus downloadable JSON payload
 - Clean modular components using @react-three/fiber, drei helpers, and Framer Motion transitions

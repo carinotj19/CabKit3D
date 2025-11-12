@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 
+const RULE_FIELD_MAP = {
+  'double-door-width': ['width'],
+  'single-door-width': ['width'],
+  'shelf-height': ['shelfCount'],
+  'shelf-density': ['shelfCount'],
+  'door-gap': ['gap'],
+};
+
 export default function ControlsPanel({
   params,
   onChange,
@@ -18,6 +26,8 @@ export default function ControlsPanel({
   onPresetLoad,
   onPresetDelete,
   onReset,
+  autoFixes = {},
+  onAutoFix,
 }) {
   const handleNumber = (key) => (event) => {
     const value = Number(event.target.value);
@@ -53,6 +63,21 @@ export default function ControlsPanel({
     setSelectedPreset('');
   };
 
+  const hintsByField = useMemo(() => {
+    const map = {};
+    validation.forEach((rule) => {
+      const fields = RULE_FIELD_MAP[rule.id];
+      if (!fields) return;
+      fields.forEach((field) => {
+        if (!map[field]) map[field] = [];
+        map[field].push(rule);
+      });
+    });
+    return map;
+  }, [validation]);
+
+  const getHints = (field) => hintsByField[field] ?? [];
+
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <div>
@@ -61,7 +86,7 @@ export default function ControlsPanel({
       </div>
 
       <Section title="Dimensions (mm)">
-        <Row label="Width">
+        <Row label="Width" hints={getHints('width')} autoFixes={autoFixes} onAutoFix={onAutoFix}>
           <NumberInput value={params.width} onChange={handleNumber('width')} min={250} max={2000} step={10} />
         </Row>
         <Row label="Height">
@@ -88,7 +113,7 @@ export default function ControlsPanel({
         <Row label="Door t.">
           <NumberInput value={params.doorThickness} onChange={handleNumber('doorThickness')} min={16} max={25} step={1} />
         </Row>
-        <Row label="Gap">
+        <Row label="Gap" hints={getHints('gap')} autoFixes={autoFixes} onAutoFix={onAutoFix}>
           <NumberInput value={params.gap} onChange={handleNumber('gap')} min={1} max={4} step={0.5} />
         </Row>
         <Row label="Hinge side">
@@ -141,7 +166,7 @@ export default function ControlsPanel({
       </Section>
 
       <Section title="Interior">
-        <Row label="Shelves">
+        <Row label="Shelves" hints={getHints('shelfCount')} autoFixes={autoFixes} onAutoFix={onAutoFix}>
           <NumberInput value={params.shelfCount} onChange={handleNumber('shelfCount')} min={0} max={8} step={1} />
         </Row>
       </Section>
@@ -241,11 +266,50 @@ function Section({ title, children }) {
   );
 }
 
-function Row({ label, children }) {
+function Row({ label, children, hints = [], autoFixes, onAutoFix }) {
+  const hintElements = hints.map((rule) => {
+    const meta = autoFixes?.[rule.id];
+    return (
+      <div
+        key={rule.id}
+        style={{
+          fontSize: 12,
+          color: rule.level === 'error' ? '#c53030' : '#b45309',
+          marginTop: 4,
+          display: 'flex',
+          gap: 8,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span>{rule.message}</span>
+        {meta ? (
+          <button
+            type="button"
+            onClick={() => onAutoFix?.(rule.id)}
+            style={{
+              border: '1px solid #94a3b8',
+              background: '#fff',
+              color: '#0f172a',
+              borderRadius: 4,
+              fontSize: 11,
+              padding: '2px 6px',
+            }}
+          >
+            {meta.label}
+          </button>
+        ) : null}
+      </div>
+    );
+  });
+
   return (
     <label style={{ display: 'grid', gridTemplateColumns: '110px 1fr', alignItems: 'center', gap: 10, fontSize: 14 }}>
       <span style={{ color: '#4b5563' }}>{label}</span>
-      <span>{children}</span>
+      <span>
+        {children}
+        {hintElements}
+      </span>
     </label>
   );
 }

@@ -43,6 +43,33 @@ const STORAGE_KEYS = {
   presets: 'cabkit3d:presets',
 };
 
+const AUTO_FIXES = {
+  'double-door-width': {
+    label: 'Set width to 500 mm',
+    apply: (p) => ({ ...p, width: Math.max(p.width, 500) }),
+  },
+  'single-door-width': {
+    label: 'Set width to 350 mm',
+    apply: (p) => ({ ...p, width: Math.max(p.width, 350) }),
+  },
+  'shelf-height': {
+    label: 'Remove shelves',
+    apply: (p) => ({ ...p, shelfCount: 0 }),
+  },
+  'shelf-density': {
+    label: 'Clamp shelf count',
+    apply: (p) => {
+      const limit = Math.max(1, Math.floor(p.height / 150));
+      const nextCount = Math.max(0, limit - 1);
+      return { ...p, shelfCount: Math.min(p.shelfCount, nextCount) };
+    },
+  },
+  'door-gap': {
+    label: 'Use 1.5 mm gap',
+    apply: (p) => ({ ...p, gap: Math.max(p.gap, 1.5) }),
+  },
+};
+
 export default function ParametricCabinetConfigurator() {
   const [params, setParams] = useState(() => readStorage(STORAGE_KEYS.lastParams, DEFAULT_PARAMS));
   const [exploded, setExploded] = useState(0);
@@ -121,6 +148,12 @@ export default function ParametricCabinetConfigurator() {
     writeStorage(STORAGE_KEYS.presets, presets);
   }, [presets]);
 
+  const handleAutoFix = useCallback((ruleId) => {
+    const fixer = AUTO_FIXES[ruleId];
+    if (!fixer) return;
+    setParams((current) => fixer.apply ? fixer.apply(current) : current);
+  }, []);
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', height: '100dvh' }}>
       <AnimatePresence initial={false} mode="sync">
@@ -149,6 +182,8 @@ export default function ParametricCabinetConfigurator() {
             onPresetLoad={handlePresetLoad}
             onPresetDelete={handlePresetDelete}
             onReset={handleReset}
+            autoFixes={AUTO_FIXES}
+            onAutoFix={handleAutoFix}
           />
         </motion.div>
       </AnimatePresence>
