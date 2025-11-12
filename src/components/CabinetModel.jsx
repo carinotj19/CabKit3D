@@ -5,7 +5,10 @@ import {
   BoxGeometry,
   Object3D,
   Color,
+  CanvasTexture,
 } from 'three';
+import HandleBar from './handles/HandleBar';
+import HandleKnob from './handles/HandleKnob';
 
 const MATERIAL_LIBRARY = {
   ML: {
@@ -50,8 +53,12 @@ export default function CabinetModel({ parts = [], materialKey = 'ML', turntable
       <InstancedBoxes parts={groupedParts.carcass} material={materials.carcass} />
       <InstancedBoxes parts={groupedParts.door} material={materials.door} />
       <InstancedBoxes parts={groupedParts.shelf} material={materials.shelf} />
-      <InstancedBoxes parts={groupedParts.handleBar} material={materials.handleBar} />
-      <InstancedBoxes parts={groupedParts.handleKnob} material={materials.handleKnob} />
+      {groupedParts.handleBar.map((part) => (
+        <HandleBar key={part.key} part={part} material={materials.handleBar} />
+      ))}
+      {groupedParts.handleKnob.map((part) => (
+        <HandleKnob key={part.key} part={part} material={materials.handleKnob} />
+      ))}
     </group>
   );
 }
@@ -87,9 +94,22 @@ function groupParts(parts) {
 function usePBRMaterials(materialKey) {
   const materials = useMemo(() => {
     const palette = MATERIAL_LIBRARY[materialKey] ?? MATERIAL_LIBRARY.ML;
+    const lightMap = createLightMapTexture();
     return {
-      carcass: createMaterial(palette.carcass, { roughness: 0.55, clearcoat: 0.08, sheen: 0.2 }),
-      door: createMaterial(palette.door, { roughness: 0.4, clearcoat: 0.3, sheen: 0.35 }),
+      carcass: createMaterial(palette.carcass, {
+        roughness: 0.55,
+        clearcoat: 0.08,
+        sheen: 0.2,
+        lightMap,
+        lightMapIntensity: lightMap ? 0.85 : undefined,
+      }),
+      door: createMaterial(palette.door, {
+        roughness: 0.4,
+        clearcoat: 0.3,
+        sheen: 0.35,
+        lightMap,
+        lightMapIntensity: lightMap ? 0.7 : undefined,
+      }),
       shelf: createMaterial(palette.shelf, { roughness: 0.6, transmission: 0.02 }),
       handleBar: createMaterial(METAL.bar, { roughness: 0.2, metalness: 0.9, clearcoat: 1 }),
       handleKnob: createMaterial(METAL.knob, { roughness: 0.35, metalness: 0.75, clearcoat: 0.6 }),
@@ -117,7 +137,13 @@ function createMaterial(color, overrides = {}) {
 
 function InstancedBoxes({ parts, material }) {
   const meshRef = useRef();
-  const geometry = useMemo(() => new BoxGeometry(1, 1, 1), []);
+  const geometry = useMemo(() => {
+    const geo = new BoxGeometry(1, 1, 1);
+    if (geo.attributes.uv) {
+      geo.setAttribute('uv2', geo.attributes.uv.clone());
+    }
+    return geo;
+  }, []);
   const dummy = useMemo(() => new Object3D(), []);
 
   useLayoutEffect(() => {
@@ -145,4 +171,23 @@ function InstancedBoxes({ parts, material }) {
       receiveShadow
     />
   );
+}
+
+function createLightMapTexture() {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, size * 0.25, size / 2, size / 2, size * 0.7);
+  gradient.addColorStop(0, '#ffffff');
+  gradient.addColorStop(1, '#b9c0ca');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  const texture = new CanvasTexture(canvas);
+  texture.flipY = false;
+  texture.needsUpdate = true;
+  return texture;
 }

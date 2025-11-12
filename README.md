@@ -7,7 +7,7 @@ CabKit3D is a Vite + React + Three.js playground for experimenting with parametr
 - Adjustable width, height, depth, carcass thickness, back panel thickness, shelf count, gaps, and door thickness
 - Single or double doors with handle presets (bar, knob, no hardware) plus hinge side selection for single doors
 - Exploded slider and optional turntable animation for reviewing joinery
-- Instanced cabinet geometry rendered with MeshPhysicalMaterial presets for melamine, paint, and veneer finishes
+- Instanced cabinet geometry rendered with MeshPhysicalMaterial presets for melamine, paint, and veneer finishes plus baked AO/lightmaps
 - Live price estimate based on a simple area-driven BOM model with shelf + hinge adjustments
 - Constraint validation (errors + warnings) plus local preset persistence via `localStorage`
 - Spatial annotations (dimension glyphs, hinge callouts, exploded-part trails) so parametric changes are visually explainable
@@ -48,6 +48,9 @@ src/
     SceneCanvas.jsx
     CabinetModel.jsx
     SceneAnnotations.jsx
+    handles/
+      HandleBar.jsx
+      HandleKnob.jsx
     ui/ControlsPanel.jsx
     environment/HDRIEnvironment.jsx
   lib/
@@ -111,6 +114,7 @@ The estimate converts millimeters to square meters, multiplies carcass and door 
 - HDRI lighting streams lazily from Poly Haven (`studio_small_08_1k.hdr`), so it stays out of the main bundle
 - Drei `StatsGl` is only enabled in development (`import.meta.env.DEV`)
 - Controls auto-save to `localStorage`, and named presets persist between sessions; delete/reset from the Presets panel as needed
+- Handle bars/knobs render as procedural NURBS/lathe meshes with shared metallic materials for higher fidelity at low draw counts
 
 ## License
 
