@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import SceneCanvas from './SceneCanvas';
 import CabinetModel from './CabinetModel';
@@ -12,24 +12,7 @@ import ShortcutsOverlay from './ShortcutsOverlay';
 import ShortcutsHelper from './ui/ShortcutsHelper';
 import { buildBillOfMaterials, buildBOMCsv } from '../lib/bom';
 import { getPricingPreset } from '../lib/pricingPresets';
-
-const DEFAULT_PARAMS = {
-  width: 600,
-  height: 720,
-  depth: 560,
-  thickness: 18,
-  backThickness: 6,
-  doorCount: 2,
-  material: 'ML',
-  handle: 'HB',
-  gap: 2,
-  doorThickness: 20,
-  shelfCount: 0,
-  hingeSide: 'LEFT',
-  handlePosition: 'middle',
-  handleOrientation: 'horizontal',
-  pricingPreset: 'US_STD',
-};
+import { useConfiguratorStore, DEFAULT_PARAMS } from '../store/useConfiguratorStore';
 
 const LIMITS = {
   width: [250, 2000],
@@ -41,11 +24,6 @@ const LIMITS = {
   gap: [1, 4],
   doorThickness: [16, 25],
   shelfCount: [0, 8],
-};
-
-const STORAGE_KEYS = {
-  lastParams: 'cabkit3d:lastParams',
-  presets: 'cabkit3d:presets',
 };
 
 const AUTO_FIXES = {
@@ -76,17 +54,34 @@ const AUTO_FIXES = {
 };
 
 export default function ParametricCabinetConfigurator() {
-  const [params, setParams] = useState(() => readStorage(STORAGE_KEYS.lastParams, DEFAULT_PARAMS));
-  const [exploded, setExploded] = useState(0);
-  const [turntable, setTurntable] = useState(false);
-  const [presets, setPresets] = useState(() => readStorage(STORAGE_KEYS.presets, {}));
+  const params = useConfiguratorStore((state) => state.params);
+  const setParams = useConfiguratorStore((state) => state.setParams);
+  const exploded = useConfiguratorStore((state) => state.exploded);
+  const setExploded = useConfiguratorStore((state) => state.setExploded);
+  const turntable = useConfiguratorStore((state) => state.turntable);
+  const setTurntable = useConfiguratorStore((state) => state.setTurntable);
+  const presets = useConfiguratorStore((state) => state.presets);
+  const setPresets = useConfiguratorStore((state) => state.setPresets);
+  const setValidationStore = useConfiguratorStore((state) => state.setValidation);
+  const hasBlockingErrors = useConfiguratorStore((state) => state.hasBlockingErrors);
+  const initialized = useConfiguratorStore((state) => state.initialized);
+  const initializeStore = useConfiguratorStore((state) => state.initialize);
+  const resetStore = useConfiguratorStore((state) => state.reset);
+
+  useEffect(() => {
+    if (!initialized) {
+      initializeStore();
+    }
+  }, [initialized, initializeStore]);
 
   const safeParams = useMemo(() => clampParams(params), [params]);
   const preset = useMemo(() => getPricingPreset(safeParams.pricingPreset), [safeParams.pricingPreset]);
   const price = useMemo(() => estimatePrice(safeParams, preset), [safeParams, preset]);
   const sku = useMemo(() => generateSKU(safeParams), [safeParams]);
   const validation = useMemo(() => validateParams(safeParams), [safeParams]);
-  const hasBlockingErrors = validation.some((rule) => rule.level === 'error');
+  useEffect(() => {
+    setValidationStore(validation);
+  }, [validation, setValidationStore]);
   const partsExploded = useMemo(
     () => getCabinetParts(safeParams, exploded),
     [safeParams, exploded],
@@ -152,10 +147,8 @@ export default function ParametricCabinetConfigurator() {
   }, []);
 
   const handleReset = useCallback(() => {
-    setParams(DEFAULT_PARAMS);
-    setExploded(0);
-    setTurntable(false);
-  }, []);
+    resetStore();
+  }, [resetStore]);
 
   const handleExport = useCallback(() => {
     const data = buildSKUObject(safeParams, sku, price, bom);
@@ -310,23 +303,4 @@ function normalizeHandleOrientation(value) {
 function normalizePricingPreset(value) {
   const preset = getPricingPreset(value);
   return preset.id;
-}
-
-function readStorage(key, fallback) {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeStorage(key, value) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore storage errors (private mode, quota, etc.)
-  }
 }
