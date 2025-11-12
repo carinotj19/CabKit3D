@@ -15,6 +15,8 @@ export function getCabinetParts(params, exploded = 0) {
     handle,
     shelfCount = 0,
     hingeSide = 'LEFT',
+    handlePosition = 'middle',
+    handleOrientation = 'horizontal',
   } = params;
 
   const W = width * MM_TO_M;
@@ -99,7 +101,7 @@ export function getCabinetParts(params, exploded = 0) {
       z: doorOffsetZ,
       width: doorWidth,
       height: doorHeight,
-    }, 'S', { hingeSide, isSingleDoor: true });
+    }, 'S', { hingeSide, isSingleDoor: true, handlePosition, handleOrientation });
   } else {
     const leafWidth = (W - 3 * GAP) / 2;
     const leftX = -(leafWidth / 2 + GAP / 2);
@@ -115,7 +117,7 @@ export function getCabinetParts(params, exploded = 0) {
       z: doorOffsetZ,
       width: leafWidth,
       height: doorHeight,
-    }, 'L', { hingeSide: 'LEFT', isSingleDoor: false });
+    }, 'L', { hingeSide: 'LEFT', isSingleDoor: false, handlePosition, handleOrientation });
 
     addHandle(parts, handle, {
       key: 'door-right',
@@ -124,7 +126,7 @@ export function getCabinetParts(params, exploded = 0) {
       z: doorOffsetZ,
       width: leafWidth,
       height: doorHeight,
-    }, 'R', { hingeSide: 'RIGHT', isSingleDoor: false });
+    }, 'R', { hingeSide: 'RIGHT', isSingleDoor: false, handlePosition, handleOrientation });
   }
 
   return parts;
@@ -141,13 +143,23 @@ function boxPart(key, size, position, kind = 'panel') {
 }
 
 const HANDLE_MARGIN = 0.03;
+const HANDLE_MIN_EDGE_CLEARANCE = 0.01;
 
 function addHandle(parts, type, door, suffix = '', options = {}) {
   if (type === 'NL') return;
 
-  const { hingeSide = 'LEFT', isSingleDoor = false } = options;
+  const {
+    hingeSide = 'LEFT',
+    isSingleDoor = false,
+    handlePosition = 'middle',
+    handleOrientation = 'horizontal',
+  } = options;
   const edgeDirection = resolveHandleDirection(door.x, hingeSide, isSingleDoor);
-  const handleX = door.x + (door.width / 2 - HANDLE_MARGIN) * edgeDirection;
+  const halfWidth = Math.max(door.width / 2, HANDLE_MIN_EDGE_CLEARANCE);
+  const inset = Math.min(HANDLE_MARGIN, Math.max(halfWidth - HANDLE_MIN_EDGE_CLEARANCE, 0));
+  const offsetFromCenter = Math.max(halfWidth - inset, HANDLE_MIN_EDGE_CLEARANCE);
+  const handleX = door.x + offsetFromCenter * edgeDirection;
+  const handleY = door.y + getHandleYOffset(handlePosition, door.height);
   const handleKind = type === 'HB' ? 'handle-bar' : 'handle-knob';
 
   if (type === 'HB') {
@@ -156,35 +168,48 @@ function addHandle(parts, type, door, suffix = '', options = {}) {
     const length = clamp(door.height * 0.35, min, max);
     const diameter = 0.012;
     const offsetZ = 0.02;
-    const barY = door.y + door.height / 3;
-
     parts.push({
       key: `handle-bar-${suffix}`,
       kind: handleKind,
       size: new Vector3(length, diameter, diameter),
-      position: new Vector3(handleX, barY, door.z + offsetZ),
-      rotation: new Euler(Math.PI / 2, 0, 0),
+      position: new Vector3(handleX, handleY, door.z + offsetZ),
+      rotation: new Euler(0, 0, 0),
+      orientation: normalizeOrientation(handleOrientation),
     });
   } else if (type === 'KN') {
     const size = 0.02;
     const offsetZ = 0.025;
-    const knobY = door.y + door.height / 3;
-
     parts.push({
       key: `handle-knob-${suffix}`,
       kind: handleKind,
       size: new Vector3(size, size, size),
-      position: new Vector3(handleX, knobY, door.z + offsetZ),
+      position: new Vector3(handleX, handleY, door.z + offsetZ),
       rotation: new Euler(0, 0, 0),
     });
   }
 }
 
-function resolveHandleDirection(doorCenterX, hingeSide, isSingleDoor) {
-  if (isSingleDoor || doorCenterX === 0) {
-    return hingeSide === 'RIGHT' ? -1 : 1;
+function resolveHandleDirection(_doorCenterX, hingeSide) {
+  return hingeSide === 'RIGHT' ? -1 : 1;
+}
+
+function getHandleYOffset(position, doorHeight) {
+  const clamped = (position || '').toLowerCase();
+  const offset = doorHeight / 3;
+  switch (clamped) {
+    case 'top':
+      return offset;
+    case 'bottom':
+      return -offset;
+    default:
+      return 0;
   }
-  return doorCenterX > 0 ? -1 : 1;
+}
+
+function normalizeOrientation(value) {
+  const val = (value || '').toLowerCase();
+  if (val === 'vertical' || val === 'depth') return val;
+  return 'horizontal';
 }
 
 function clamp(value, min, max) {

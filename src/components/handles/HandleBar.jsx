@@ -24,12 +24,24 @@ export default function HandleBar({ part, material }) {
     return [sx || 1, sy || 1, sz || 1];
   }, [part.size]);
 
+  const rotation = useMemo(() => {
+    const { x, y, z } = part.rotation;
+    const orientation = (part.orientation || 'horizontal').toLowerCase();
+    if (orientation === 'vertical') {
+      return [x, y, z + Math.PI / 2];
+    }
+    if (orientation === 'depth') {
+      return [x, y + Math.PI / 2, z];
+    }
+    return [x, y, z];
+  }, [part.rotation, part.orientation]);
+
   return (
     <mesh
       geometry={geometry}
       material={material ?? fallbackMaterial}
       position={[part.position.x, part.position.y, part.position.z]}
-      rotation={[part.rotation.x, part.rotation.y, part.rotation.z]}
+      rotation={rotation}
       scale={scale}
       castShadow
       receiveShadow

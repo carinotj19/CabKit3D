@@ -118,6 +118,26 @@ export default function ControlsPanel({
             <option value="NL">No Handle</option>
           </select>
         </Row>
+        <Row label="Handle pos.">
+          <select
+            value={params.handlePosition}
+            onChange={(e) => onChange({ handlePosition: e.target.value })}
+          >
+            <option value="top">Top</option>
+            <option value="middle">Middle</option>
+            <option value="bottom">Bottom</option>
+          </select>
+        </Row>
+        <Row label="Handle orient.">
+          <select
+            value={params.handleOrientation}
+            onChange={(e) => onChange({ handleOrientation: e.target.value })}
+          >
+            <option value="horizontal">Horizontal (X)</option>
+            <option value="vertical">Vertical (Y)</option>
+            <option value="depth">Depth (Z)</option>
+          </select>
+        </Row>
       </Section>
 
       <Section title="Interior">

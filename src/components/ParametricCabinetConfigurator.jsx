@@ -22,6 +22,8 @@ const DEFAULT_PARAMS = {
   doorThickness: 20,
   shelfCount: 0,
   hingeSide: 'LEFT',
+  handlePosition: 'middle',
+  handleOrientation: 'horizontal',
 };
 
 const LIMITS = {
@@ -199,11 +201,29 @@ function clampParams(p) {
     }
   });
   next.hingeSide = next.hingeSide === 'RIGHT' ? 'RIGHT' : 'LEFT';
+  next.handlePosition = normalizeHandlePosition(next.handlePosition);
+  next.handleOrientation = normalizeHandleOrientation(next.handleOrientation);
   return next;
 }
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, Number(value) || 0));
+}
+
+function normalizeHandlePosition(value) {
+  const allowed = ['top', 'middle', 'bottom'];
+  if (allowed.includes((value || '').toLowerCase())) {
+    return value.toLowerCase();
+  }
+  return 'middle';
+}
+
+function normalizeHandleOrientation(value) {
+  const allowed = ['horizontal', 'vertical'];
+  if (allowed.includes((value || '').toLowerCase())) {
+    return value.toLowerCase();
+  }
+  return 'horizontal';
 }
 
 function readStorage(key, fallback) {
