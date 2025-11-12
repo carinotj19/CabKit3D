@@ -6,7 +6,6 @@ import {
   Object3D,
   Color,
 } from 'three';
-import { getCabinetParts } from '../lib/cabinetMath';
 
 const MATERIAL_LIBRARY = {
   ML: {
@@ -31,15 +30,13 @@ const METAL = {
   knob: '#c7c2b5',
 };
 
-export default function CabinetModel({ params, exploded, turntable }) {
+export default function CabinetModel({ parts = [], materialKey = 'ML', turntable }) {
   const groupRef = useRef();
   const { invalidate } = useThree();
 
-  const parts = useMemo(() => getCabinetParts(params, exploded), [params, exploded]);
-
   const groupedParts = useMemo(() => groupParts(parts), [parts]);
 
-  const materials = usePBRMaterials(params.material);
+  const materials = usePBRMaterials(materialKey);
 
   useEffect(() => invalidate(), [parts, invalidate]);
 

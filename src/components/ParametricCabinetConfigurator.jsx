@@ -6,6 +6,8 @@ import ControlsPanel from './ui/ControlsPanel';
 import { estimatePrice } from '../lib/pricing';
 import { generateSKU, buildSKUObject } from '../lib/sku';
 import { validateParams } from '../lib/validation';
+import { getCabinetParts } from '../lib/cabinetMath';
+import SceneAnnotations from './SceneAnnotations';
 
 const DEFAULT_PARAMS = {
   width: 600,
@@ -50,6 +52,14 @@ export default function ParametricCabinetConfigurator() {
   const sku = useMemo(() => generateSKU(safeParams), [safeParams]);
   const validation = useMemo(() => validateParams(safeParams), [safeParams]);
   const hasBlockingErrors = validation.some((rule) => rule.level === 'error');
+  const partsExploded = useMemo(
+    () => getCabinetParts(safeParams, exploded),
+    [safeParams, exploded],
+  );
+  const partsBase = useMemo(
+    () => getCabinetParts(safeParams, 0),
+    [safeParams],
+  );
 
   const animateCanvas = turntable || exploded > 0.001;
 
@@ -143,7 +153,17 @@ export default function ParametricCabinetConfigurator() {
 
       <div style={{ position: 'relative' }}>
         <SceneCanvas animate={animateCanvas}>
-          <CabinetModel params={safeParams} exploded={exploded} turntable={turntable} />
+          <CabinetModel
+            parts={partsExploded}
+            materialKey={safeParams.material}
+            turntable={turntable}
+          />
+          <SceneAnnotations
+            params={safeParams}
+            exploded={exploded}
+            parts={partsExploded}
+            baseParts={partsBase}
+          />
         </SceneCanvas>
 
         <div
