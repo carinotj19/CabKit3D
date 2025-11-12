@@ -8,6 +8,8 @@ import { generateSKU, buildSKUObject } from '../lib/sku';
 import { validateParams } from '../lib/validation';
 import { getCabinetParts } from '../lib/cabinetMath';
 import SceneAnnotations from './SceneAnnotations';
+import ShortcutsOverlay from './ShortcutsOverlay';
+import ShortcutsHelper from './ui/ShortcutsHelper';
 
 const DEFAULT_PARAMS = {
   width: 600,
@@ -96,6 +98,27 @@ export default function ParametricCabinetConfigurator() {
     setParams((current) => ({ ...current, ...patch }));
   }, []);
 
+  useEffect(() => {
+    const handleAdjust = (event) => {
+      const { axis, delta } = event.detail || {};
+      if (!axis || typeof delta !== 'number') return;
+      setParams((current) => {
+      const next = { ...current };
+      if (axis === 'width') next.width = current.width + delta;
+      if (axis === 'height') next.height = current.height + delta;
+      if (axis === 'depth') next.depth = current.depth + delta;
+      return next;
+      });
+    };
+    const handleToggleTurntable = () => setTurntable((v) => !v);
+    window.addEventListener('cabkit:adjust', handleAdjust);
+    window.addEventListener('cabkit:toggle-turntable', handleToggleTurntable);
+    return () => {
+      window.removeEventListener('cabkit:adjust', handleAdjust);
+      window.removeEventListener('cabkit:toggle-turntable', handleToggleTurntable);
+    };
+  }, []);
+
   const handlePresetSave = useCallback((name) => {
     if (!name) return false;
     setPresets((current) => ({
@@ -155,7 +178,10 @@ export default function ParametricCabinetConfigurator() {
   }, []);
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', height: '100dvh' }}>
+    <>
+      <ShortcutsOverlay />
+      <ShortcutsHelper />
+      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', height: '100dvh' }}>
       <AnimatePresence initial={false} mode="sync">
         <motion.div
           key="controls"
@@ -224,6 +250,7 @@ export default function ParametricCabinetConfigurator() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -254,7 +281,7 @@ function normalizeHandlePosition(value) {
 }
 
 function normalizeHandleOrientation(value) {
-  const allowed = ['horizontal', 'vertical'];
+  const allowed = ['horizontal', 'vertical', 'depth'];
   if (allowed.includes((value || '').toLowerCase())) {
     return value.toLowerCase();
   }
