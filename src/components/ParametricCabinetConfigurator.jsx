@@ -12,6 +12,7 @@ import ShortcutsHelper from './ui/ShortcutsHelper';
 import { buildBillOfMaterials, buildBOMCsv } from '../lib/bom';
 import { getPricingPreset } from '../lib/pricingPresets';
 import { useConfiguratorStore, DEFAULT_PARAMS } from '../store/useConfiguratorStore';
+import { preloadCommonPreset } from '../store/preloadCommonPreset';
 const ControlsPanelLazy = lazy(() => import('./ui/ControlsPanel'));
 const MaterialsPanelLazy = lazy(() => import('./ui/MaterialsPanel'));
 
@@ -72,6 +73,7 @@ export default function ParametricCabinetConfigurator() {
   useEffect(() => {
     if (!initialized) {
       initializeStore();
+      preloadCommonPreset(useConfiguratorStore.getState());
     }
   }, [initialized, initializeStore]);
 
@@ -104,11 +106,11 @@ export default function ParametricCabinetConfigurator() {
       const { axis, delta } = event.detail || {};
       if (!axis || typeof delta !== 'number') return;
       setParams((current) => {
-      const next = { ...current };
-      if (axis === 'width') next.width = current.width + delta;
-      if (axis === 'height') next.height = current.height + delta;
-      if (axis === 'depth') next.depth = current.depth + delta;
-      return next;
+        const next = { ...current };
+        if (axis === 'width') next.width = current.width + delta;
+        if (axis === 'height') next.height = current.height + delta;
+        if (axis === 'depth') next.depth = current.depth + delta;
+        return next;
       });
     };
     const handleToggleTurntable = () => setTurntable((v) => !v);
@@ -118,7 +120,7 @@ export default function ParametricCabinetConfigurator() {
       window.removeEventListener('cabkit:adjust', handleAdjust);
       window.removeEventListener('cabkit:toggle-turntable', handleToggleTurntable);
     };
-  }, []);
+  }, [setParams, setTurntable]);
 
   const [sidebarTab, setSidebarTab] = useState('design');
 

@@ -68,7 +68,9 @@ export const useConfiguratorStore = create((set) => ({
     set({ exploded: value });
   },
   setTurntable(value) {
-    set({ turntable: value });
+    set((state) => ({
+      turntable: typeof value === 'function' ? value(state.turntable) : value,
+    }));
   },
   setPresets(updater) {
     set((state) => {

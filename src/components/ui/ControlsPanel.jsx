@@ -194,7 +194,11 @@ export default function ControlsPanel({
           />
         </Row>
         <Row label="Turntable">
-          <input type="checkbox" checked={turntable} onChange={(e) => onTurntable(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={!!turntable}
+            onChange={(e) => onTurntable(e.target.checked)}
+          />
         </Row>
       </Section>
 
