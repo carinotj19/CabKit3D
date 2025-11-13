@@ -49,11 +49,13 @@ export const useConfiguratorStore = create((set) => ({
   presets: {},
   validation: [],
   hasBlockingErrors: false,
+  onboardingSeen: false,
   initialized: false,
   initialize() {
     set({
       params: readStorage(STORAGE_KEYS.lastParams, DEFAULT_PARAMS),
       presets: readStorage(STORAGE_KEYS.presets, {}),
+      onboardingSeen: !!readStorage('cabkit3d:onboarding', false),
       initialized: true,
     });
   },
@@ -81,6 +83,10 @@ export const useConfiguratorStore = create((set) => ({
   },
   setValidation(list) {
     set({ validation: list, hasBlockingErrors: list.some((rule) => rule.level === 'error') });
+  },
+  dismissOnboarding() {
+    writeStorage('cabkit3d:onboarding', true);
+    set({ onboardingSeen: true });
   },
   reset() {
     writeStorage(STORAGE_KEYS.lastParams, DEFAULT_PARAMS);

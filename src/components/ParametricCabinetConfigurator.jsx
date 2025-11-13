@@ -9,6 +9,7 @@ import { getCabinetParts } from '../lib/cabinetMath';
 import SceneAnnotations from './SceneAnnotations';
 import ShortcutsOverlay from './ShortcutsOverlay';
 import ShortcutsHelper from './ui/ShortcutsHelper';
+import OnboardingCoach from './OnboardingCoach';
 import { buildBillOfMaterials, buildBOMCsv } from '../lib/bom';
 import { getPricingPreset } from '../lib/pricingPresets';
 import { useConfiguratorStore, DEFAULT_PARAMS } from '../store/useConfiguratorStore';
@@ -183,10 +184,13 @@ export default function ParametricCabinetConfigurator() {
     setParams((current) => fixer.apply ? fixer.apply(current) : current);
   }, []);
 
+  const isSSR = typeof window === 'undefined';
+
   return (
     <>
       <ShortcutsOverlay />
       <ShortcutsHelper />
+      <OnboardingCoach />
       <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', height: '100dvh' }}>
       <AnimatePresence initial={false} mode="sync">
         <motion.div
@@ -230,19 +234,35 @@ export default function ParametricCabinetConfigurator() {
       </AnimatePresence>
 
       <div style={{ position: 'relative' }}>
-        <SceneCanvas animate={animateCanvas}>
-          <CabinetModel
-            parts={partsExploded}
-            materialKey={safeParams.material}
-            turntable={turntable}
-          />
-          <SceneAnnotations
-            params={safeParams}
-            exploded={exploded}
-            parts={partsExploded}
-            baseParts={partsBase}
-          />
-        </SceneCanvas>
+        {isSSR ? (
+          <div
+            style={{
+              height: '100%',
+              minHeight: 400,
+              display: 'grid',
+              placeItems: 'center',
+              background: 'linear-gradient(135deg, #f8fbff, #e2e8f0)',
+              color: '#475569',
+              fontWeight: 600,
+            }}
+          >
+            CabKit3D preview ready for {sku}
+          </div>
+        ) : (
+          <SceneCanvas animate={animateCanvas}>
+            <CabinetModel
+              parts={partsExploded}
+              materialKey={safeParams.material}
+              turntable={turntable}
+            />
+            <SceneAnnotations
+              params={safeParams}
+              exploded={exploded}
+              parts={partsExploded}
+              baseParts={partsBase}
+            />
+          </SceneCanvas>
+        )}
 
         <div
           style={{

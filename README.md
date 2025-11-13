@@ -40,6 +40,7 @@ Open http://localhost:5173 to see the configurator.
 - `npm run dev` – start Vite in dev mode
 - `npm run build` – production bundle
 - `npm run preview` – serve the production build locally
+- `npm run build:ssr && npm run prerender` – optional SSR snapshot (writes `dist-ssr/index.html` for embeds/social previews)
 
 ## Project Structure
 
