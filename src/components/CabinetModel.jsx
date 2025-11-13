@@ -9,6 +9,7 @@ import {
 } from 'three';
 import HandleBar from './handles/HandleBar';
 import HandleKnob from './handles/HandleKnob';
+import HandleRecessed from './handles/HandleRecessed';
 
 const MATERIAL_LIBRARY = {
   ML: {
@@ -25,6 +26,21 @@ const MATERIAL_LIBRARY = {
     carcass: '#d8b28a',
     door: '#d2a06c',
     shelf: '#cfa376',
+  },
+  MB: {
+    carcass: '#1f2937',
+    door: '#111827',
+    shelf: '#1e2532',
+  },
+  SS: {
+    carcass: '#cfd7dd',
+    door: '#e4e8ec',
+    shelf: '#d3dbe1',
+  },
+  PW: {
+    carcass: '#d5b089',
+    door: '#e3c199',
+    shelf: '#c99d69',
   },
 };
 
@@ -59,6 +75,9 @@ export default function CabinetModel({ parts = [], materialKey = 'ML', turntable
       {groupedParts.handleKnob.map((part) => (
         <HandleKnob key={part.key} part={part} material={materials.handleKnob} />
       ))}
+      {groupedParts.handleRecessed.map((part) => (
+        <HandleRecessed key={part.key} part={part} material={materials.handleRecessed} />
+      ))}
     </group>
   );
 }
@@ -82,12 +101,15 @@ function groupParts(parts) {
         case 'handle-knob':
           acc.handleKnob.push(part);
           break;
+        case 'handle-recessed':
+          acc.handleRecessed.push(part);
+          break;
         default:
           acc.carcass.push(part);
       }
       return acc;
     },
-    { carcass: [], door: [], shelf: [], handleBar: [], handleKnob: [] },
+    { carcass: [], door: [], shelf: [], handleBar: [], handleKnob: [], handleRecessed: [] },
   );
 }
 
@@ -113,6 +135,7 @@ function usePBRMaterials(materialKey) {
       shelf: createMaterial(palette.shelf, { roughness: 0.6, transmission: 0.02 }),
       handleBar: createMaterial(METAL.bar, { roughness: 0.2, metalness: 0.9, clearcoat: 1 }),
       handleKnob: createMaterial(METAL.knob, { roughness: 0.35, metalness: 0.75, clearcoat: 0.6 }),
+      handleRecessed: createMaterial('#444', { roughness: 0.35, metalness: 0.4 }),
     };
   }, [materialKey]);
   useEffect(() => {

@@ -17,12 +17,13 @@ export default function HandleBar({ part, material }) {
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => fallbackMaterial?.dispose(), [fallbackMaterial]);
 
+  const profile = part.profile ?? 'bar';
   const scale = useMemo(() => {
-    const sx = part.size.x / BASE_LENGTH;
-    const sy = part.size.y / (BASE_RADIUS * 2);
-    const sz = part.size.z / (BASE_RADIUS * 2);
-    return [sx || 1, sy || 1, sz || 1];
-  }, [part.size]);
+    const lengthScale = part.size.x / BASE_LENGTH;
+    const radialScale = profile === 'dpull' ? part.size.z / (BASE_RADIUS * 1.6) : part.size.y / (BASE_RADIUS * 2);
+    const depthScale = profile === 'dpull' ? part.size.y / (BASE_RADIUS * 1.6) : part.size.z / (BASE_RADIUS * 2);
+    return [lengthScale || 1, radialScale || 1, depthScale || 1];
+  }, [part.size, profile]);
 
   const rotation = useMemo(() => {
     const { x, y, z } = part.rotation;

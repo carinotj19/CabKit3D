@@ -140,12 +140,17 @@ export default function ControlsPanel({
             <option value="ML">Melamine</option>
             <option value="PN">Paint</option>
             <option value="WD">Wood Veneer</option>
+            <option value="MB">Matte Black</option>
+            <option value="SS">Stainless Laminate</option>
+            <option value="PW">Plywood</option>
           </select>
         </Row>
         <Row label="Handle">
           <select value={params.handle} onChange={(e) => onChange({ handle: e.target.value })}>
             <option value="HB">Bar</option>
             <option value="KN">Knob</option>
+            <option value="DP">D Pull</option>
+            <option value="RP">Recessed Pull</option>
             <option value="NL">No Handle</option>
           </select>
         </Row>

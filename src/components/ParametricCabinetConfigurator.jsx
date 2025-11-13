@@ -1,8 +1,7 @@
-import { useMemo, useCallback, useEffect } from 'react';
+import { useMemo, useCallback, useEffect, useState, Suspense, lazy } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import SceneCanvas from './SceneCanvas';
 import CabinetModel from './CabinetModel';
-import ControlsPanel from './ui/ControlsPanel';
 import { estimatePrice } from '../lib/pricing';
 import { generateSKU, buildSKUObject } from '../lib/sku';
 import { validateParams } from '../lib/validation';
@@ -13,6 +12,8 @@ import ShortcutsHelper from './ui/ShortcutsHelper';
 import { buildBillOfMaterials, buildBOMCsv } from '../lib/bom';
 import { getPricingPreset } from '../lib/pricingPresets';
 import { useConfiguratorStore, DEFAULT_PARAMS } from '../store/useConfiguratorStore';
+const ControlsPanelLazy = lazy(() => import('./ui/ControlsPanel'));
+const MaterialsPanelLazy = lazy(() => import('./ui/MaterialsPanel'));
 
 const LIMITS = {
   width: [250, 2000],
@@ -119,6 +120,8 @@ export default function ParametricCabinetConfigurator() {
     };
   }, []);
 
+  const [sidebarTab, setSidebarTab] = useState('design');
+
   const handlePresetSave = useCallback((name) => {
     if (!name) return false;
     setPresets((current) => ({
@@ -172,14 +175,6 @@ export default function ParametricCabinetConfigurator() {
     URL.revokeObjectURL(url);
   }, [bom, sku]);
 
-  useEffect(() => {
-    writeStorage(STORAGE_KEYS.lastParams, safeParams);
-  }, [safeParams]);
-
-  useEffect(() => {
-    writeStorage(STORAGE_KEYS.presets, presets);
-  }, [presets]);
-
   const handleAutoFix = useCallback((ruleId) => {
     const fixer = AUTO_FIXES[ruleId];
     if (!fixer) return;
@@ -198,30 +193,37 @@ export default function ParametricCabinetConfigurator() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: -24, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 280, damping: 32 }}
-          style={{ borderRight: '1px solid #eceff4', padding: '20px', overflow: 'auto', background: '#fbfcff' }}
+          style={{ borderRight: '1px solid #eceff4', padding: '20px', overflow: 'auto', background: '#fbfcff', display: 'grid', gap: 12 }}
         >
-          <ControlsPanel
-            params={safeParams}
-            onChange={handleParamChange}
-            exploded={exploded}
-            onExploded={setExploded}
-            turntable={turntable}
-            onTurntable={setTurntable}
-            sku={sku}
-            price={price}
-            onExport={handleExport}
-            onExportCsv={handleExportCsv}
-            validation={validation}
-            hasBlockingErrors={hasBlockingErrors}
-            presets={presets}
-            onPresetSave={handlePresetSave}
-            onPresetLoad={handlePresetLoad}
-            onPresetDelete={handlePresetDelete}
-            onReset={handleReset}
-            autoFixes={AUTO_FIXES}
-            onAutoFix={handleAutoFix}
-            pricingPreset={safeParams.pricingPreset}
-          />
+          <SidebarTabs active={sidebarTab} onChange={setSidebarTab} />
+          <Suspense fallback={<div style={{ padding: '16px 0', color: '#94a3b8' }}>Loading panel...</div>}>
+            {sidebarTab === 'design' ? (
+              <ControlsPanelLazy
+                params={safeParams}
+                onChange={handleParamChange}
+                exploded={exploded}
+                onExploded={setExploded}
+                turntable={turntable}
+                onTurntable={setTurntable}
+                sku={sku}
+                price={price}
+                onExport={handleExport}
+                onExportCsv={handleExportCsv}
+                validation={validation}
+                hasBlockingErrors={hasBlockingErrors}
+                presets={presets}
+                onPresetSave={handlePresetSave}
+                onPresetLoad={handlePresetLoad}
+                onPresetDelete={handlePresetDelete}
+                onReset={handleReset}
+                autoFixes={AUTO_FIXES}
+                onAutoFix={handleAutoFix}
+                pricingPreset={safeParams.pricingPreset}
+              />
+            ) : (
+              <MaterialsPanelLazy params={safeParams} />
+            )}
+          </Suspense>
         </motion.div>
       </AnimatePresence>
 
@@ -303,4 +305,32 @@ function normalizeHandleOrientation(value) {
 function normalizePricingPreset(value) {
   const preset = getPricingPreset(value);
   return preset.id;
+}
+function SidebarTabs({ active, onChange }) {
+  const tabs = [
+    { id: 'design', label: 'Design' },
+    { id: 'materials', label: 'Materials' },
+  ];
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => onChange(tab.id)}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid',
+            borderColor: active === tab.id ? '#4f46e5' : '#e2e8f0',
+            background: active === tab.id ? '#eef2ff' : '#fff',
+            color: active === tab.id ? '#312e81' : '#475569',
+            fontWeight: 600,
+          }}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
 }

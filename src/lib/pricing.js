@@ -4,6 +4,9 @@ const MATERIAL_RATE_PER_M2 = {
   ML: 18,
   PN: 26,
   WD: 32,
+  MB: 24, // matte black lacquer
+  SS: 34, // stainless laminate
+  PW: 20, // plywood core veneer
 };
 
 const BACK_RATE_PER_M2 = 10;
@@ -12,6 +15,8 @@ const HANDLE_COST = {
   HB: 8,
   KN: 4,
   NL: 0,
+  DP: 10,
+  RP: 12,
 };
 const HINGE_COST_PER_DOOR = 7; // two hinges
 const ASSEMBLY_COST = 12;

@@ -20,7 +20,7 @@ export default function PricingBreakdownChart({ breakdown = {}, total = 0, curre
   }
 
   return (
-    <div style={{ width: '100%', height: 240 }}>
+    <div style={{ width: '100%', minWidth: 0, height: 240 }}>
       <ResponsiveContainer>
         <ComposedChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
           <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={60} />

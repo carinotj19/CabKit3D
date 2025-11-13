@@ -160,21 +160,22 @@ function addHandle(parts, type, door, suffix = '', options = {}) {
   const offsetFromCenter = Math.max(halfWidth - inset, HANDLE_MIN_EDGE_CLEARANCE);
   const handleX = door.x + offsetFromCenter * edgeDirection;
   const handleY = door.y + getHandleYOffset(handlePosition, door.height);
-  const handleKind = type === 'HB' ? 'handle-bar' : 'handle-knob';
+  const handleKind = getHandleKind(type);
 
-  if (type === 'HB') {
+  if (type === 'HB' || type === 'DP') {
     const min = 0.096;
     const max = 0.32;
     const length = clamp(door.height * 0.35, min, max);
     const diameter = 0.012;
     const offsetZ = 0.02;
     parts.push({
-      key: `handle-bar-${suffix}`,
+      key: `handle-${type === 'HB' ? 'bar' : 'dpull'}-${suffix}`,
       kind: handleKind,
       size: new Vector3(length, diameter, diameter),
       position: new Vector3(handleX, handleY, door.z + offsetZ),
       rotation: new Euler(0, 0, 0),
       orientation: normalizeOrientation(handleOrientation),
+      profile: type === 'DP' ? 'dpull' : 'bar',
     });
   } else if (type === 'KN') {
     const size = 0.02;
@@ -184,6 +185,18 @@ function addHandle(parts, type, door, suffix = '', options = {}) {
       kind: handleKind,
       size: new Vector3(size, size, size),
       position: new Vector3(handleX, handleY, door.z + offsetZ),
+      rotation: new Euler(0, 0, 0),
+    });
+  } else if (type === 'RP') {
+    const insetZ = 0.008;
+    const width = clamp(door.width * 0.16, 0.06, 0.12);
+    const height = clamp(door.height * 0.12, 0.06, 0.2);
+    const depth = 0.015;
+    parts.push({
+      key: `handle-recessed-${suffix}`,
+      kind: handleKind,
+      size: new Vector3(width, height, depth),
+      position: new Vector3(handleX, handleY, door.z + insetZ),
       rotation: new Euler(0, 0, 0),
     });
   }
@@ -210,6 +223,21 @@ function normalizeOrientation(value) {
   const val = (value || '').toLowerCase();
   if (val === 'vertical' || val === 'depth') return val;
   return 'horizontal';
+}
+
+function getHandleKind(type) {
+  switch (type) {
+    case 'HB':
+      return 'handle-bar';
+    case 'KN':
+      return 'handle-knob';
+    case 'DP':
+      return 'handle-bar';
+    case 'RP':
+      return 'handle-recessed';
+    default:
+      return 'handle';
+  }
 }
 
 function clamp(value, min, max) {
