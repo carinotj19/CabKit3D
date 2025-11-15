@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CabKit3D - Parametric cabinet configurator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --blue: #4f46e5;
+        --indigo: #312e81;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: radial-gradient(circle at top, #111c3c, #050712 60%);
+        color: #f8fafc;
+        line-height: 1.6;
+      }
+      .wrapper {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 64px 24px 120px;
+        display: grid;
+        gap: 48px;
+      }
+      h1 {
+        font-size: clamp(2.5rem, 5vw, 3.75rem);
+        line-height: 1.1;
+        margin: 0 0 20px;
+      }
+      p.lede {
+        max-width: 620px;
+        font-size: 1.1rem;
+        color: #c7d2fe;
+        margin-bottom: 32px;
+      }
+      .cta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .cta a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 20px;
+        border-radius: 999px;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .cta a.primary {
+        background: linear-gradient(120deg, #5eead4, #4f46e5);
+        color: #0b1121;
+        box-shadow: 0 10px 30px rgba(79, 70, 229, 0.35);
+      }
+      .cta a.secondary {
+        border-color: rgba(226, 232, 240, 0.3);
+        color: #e2e8f0;
+      }
+      .cta a:hover {
+        transform: translateY(-2px);
+      }
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+      }
+      .feature-card {
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 25px 45px rgba(2, 6, 23, 0.35);
+      }
+      .feature-card h3 {
+        margin: 0 0 10px;
+        font-size: 1.1rem;
+        color: #c3dafe;
+      }
+      .before-after-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+      }
+      figure {
+        margin: 0;
+        background: rgba(15, 23, 42, 0.65);
+        border-radius: 18px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        overflow: hidden;
+        box-shadow: 0 25px 55px rgba(2, 6, 23, 0.45);
+        display: flex;
+        flex-direction: column;
+      }
+      figure img {
+        width: 100%;
+        display: block;
+      }
+      figure figcaption {
+        padding: 18px 20px 24px;
+      }
+      figcaption h4 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+        color: #e0e7ff;
+      }
+      figcaption p {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #cbd5f5;
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        font-size: 0.95rem;
+      }
+      .links a {
+        color: #a5b4fc;
+        text-decoration: none;
+      }
+      .links a:hover {
+        text-decoration: underline;
+      }
+      @media (max-width: 640px) {
+        .cta {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrapper">
+      <section>
+        <h1>CabKit3D - parametric cabinetry with explodable insight.</h1>
+        <p class="lede">
+          Drive every millimeter. Sweep exploded views, auto-resolve validation warnings, and watch the pricing waterfall react in real time.
+          Built with Vite, React, and GPU instancing so the viewport never flinches.
+        </p>
+        <div class="cta">
+          <a class="primary" href="./" target="_blank" rel="noreferrer">Launch live configurator</a>
+          <a class="secondary" href="./dist-ssr/index.html" target="_blank" rel="noreferrer">View SSR snapshot</a>
+          <a class="secondary" href="https://github.com/carinotj19/CabKit3D" target="_blank" rel="noreferrer">GitHub repo</a>
+        </div>
+      </section>
+
+      <section class="features">
+        <article class="feature-card">
+          <h3>Exploded + turntable canvas</h3>
+          <p>
+            Instanced panels, doors, and shelves share a single draw call per material, so pulling the cabinet apart or spinning on a turntable
+            stays at 60&nbsp;fps even when you max out the envelope.
+          </p>
+        </article>
+        <article class="feature-card">
+          <h3>Constraint-aware auto-fixes</h3>
+          <p>
+            Inline validation keeps hinge offsets, shelf spans, and door widths manufacturable; one tap applies curated fixes that immediately
+            sync with the BOM.
+          </p>
+        </article>
+        <article class="feature-card">
+          <h3>Live pricing waterfall</h3>
+          <p>
+            A stacked BOM waterfall adjusts carcass, door, hardware, and region markups per edit so finance and fabrication speak the same
+            language.
+          </p>
+        </article>
+        <article class="feature-card">
+          <h3>Download-ready bundles</h3>
+          <p>
+            Export SKU JSON, CSV BOM, and GLB geometry as a single ZIP-ready bundle for ERP, quoting, or render pipelines.
+          </p>
+        </article>
+      </section>
+
+      <section>
+        <div style="margin-bottom: 18px; color: #94a3b8; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase">
+          Before / After highlights
+        </div>
+        <div class="before-after-grid">
+          <figure>
+            <img src="public/media/exploded-before-after.gif" alt="Exploded view before and after animation" />
+            <figcaption>
+              <h4>Exploded view slider</h4>
+              <p>Transition from compressed joinery to a storybook pull-apart. The instancing strategy keeps GPU overdraw tiny.</p>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="public/media/autofix-before-after.gif" alt="Validation auto-fix before and after animation" />
+            <figcaption>
+              <h4>Validation auto-fixes</h4>
+              <p>Warnings call out rule IDs; auto-fix buttons nudge dimensions so the downstream BOM and annotations stay valid.</p>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="public/media/waterfall-before-after.gif" alt="Pricing waterfall before and after animation" />
+            <figcaption>
+              <h4>Waterfall chart updates</h4>
+              <p>Every tweak reallocates carcass, shelves, hardware, and markup contributions. See where cost deltas originate.</p>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="links">
+        <span>Need embeds?</span>
+        <a href="./dist-ssr/index.html" target="_blank" rel="noreferrer">SSR preview card</a>
+        <span>&middot;</span>
+        <a href="https://github.com/carinotj19/CabKit3D" target="_blank" rel="noreferrer">Clone the repo</a>
+        <span>&middot;</span>
+        <a href="./" target="_blank" rel="noreferrer">Run the app</a>
+      </section>
+    </main>
+  </body>
+</html>

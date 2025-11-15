@@ -18,6 +18,7 @@ import { useConfiguratorStore, DEFAULT_PARAMS } from '../store/useConfiguratorSt
 import { preloadCommonPreset } from '../store/preloadCommonPreset';
 import { buildShareUrl, readParamsFromSearch, buildPreviewUrl } from '../lib/shareLinks';
 import { downloadTextContent, downloadBlobContent } from '../lib/downloads';
+import ScenePerformancePanel from './ui/ScenePerformancePanel';
 const ControlsPanelLazy = lazy(() => import('./ui/ControlsPanel'));
 const MaterialsPanelLazy = lazy(() => import('./ui/MaterialsPanel'));
 
@@ -136,6 +137,7 @@ export default function ParametricCabinetConfigurator() {
   );
   const bom = useMemo(() => buildBillOfMaterials(partsBase, safeParams), [partsBase, safeParams]);
   const bomCsv = useMemo(() => buildBOMCsv(bom), [bom]);
+  const instancingStats = useMemo(() => summarizeInstancing(partsBase), [partsBase]);
   useEffect(() => {
     let cancelled = false;
     setGlbGenerating(true);
@@ -404,6 +406,8 @@ export default function ParametricCabinetConfigurator() {
           </SceneCanvas>
         )}
 
+        <ScenePerformancePanel stats={instancingStats} />
+
         <div
           style={{
             position: 'absolute',
@@ -468,6 +472,31 @@ function normalizeHandleOrientation(value) {
 function normalizePricingPreset(value) {
   const preset = getPricingPreset(value);
   return preset.id;
+}
+
+function summarizeInstancing(parts = []) {
+  const stats = {
+    carcass: 0,
+    door: 0,
+    shelf: 0,
+    handle: 0,
+  };
+  parts.forEach((part) => {
+    if (part.kind === 'panel') stats.carcass += 1;
+    else if (part.kind === 'door') stats.door += 1;
+    else if (part.kind === 'shelf') stats.shelf += 1;
+    else if (part.kind?.startsWith('handle')) stats.handle += 1;
+  });
+  const instancedTotal = stats.carcass + stats.door + stats.shelf;
+  const drawCalls = ['carcass', 'door', 'shelf'].reduce((sum, key) => sum + (stats[key] > 0 ? 1 : 0), 0);
+  const gpuMemoryMB = Math.max(12, parts.length * 0.18 + drawCalls * 0.9);
+  return {
+    ...stats,
+    instancedTotal,
+    drawCalls,
+    gpuMemoryMB,
+    total: parts.length,
+  };
 }
 
 function SidebarTabs({ active, onChange }) {
