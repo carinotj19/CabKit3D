@@ -11,11 +11,13 @@ import ShortcutsOverlay from './ShortcutsOverlay';
 import ShortcutsHelper from './ui/ShortcutsHelper';
 import OnboardingCoach from './OnboardingCoach';
 import { buildBillOfMaterials, buildBOMCsv } from '../lib/bom';
-import { exportCabinetGlb } from '../lib/exportGlb';
+import { buildBomPackageZip } from '../lib/bomPackage';
+import { generateCabinetGlbBlob } from '../lib/exportGlb';
 import { getPricingPreset } from '../lib/pricingPresets';
 import { useConfiguratorStore, DEFAULT_PARAMS } from '../store/useConfiguratorStore';
 import { preloadCommonPreset } from '../store/preloadCommonPreset';
 import { buildShareUrl, readParamsFromSearch, buildPreviewUrl } from '../lib/shareLinks';
+import { downloadTextContent, downloadBlobContent } from '../lib/downloads';
 const ControlsPanelLazy = lazy(() => import('./ui/ControlsPanel'));
 const MaterialsPanelLazy = lazy(() => import('./ui/MaterialsPanel'));
 
@@ -82,6 +84,10 @@ export default function ParametricCabinetConfigurator() {
   const [shareUrl, setShareUrl] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
+  const [glbAsset, setGlbAsset] = useState({ blob: null, sku: '' });
+  const [glbGenerating, setGlbGenerating] = useState(false);
+  const [bomPackage, setBomPackage] = useState({ blob: null, sku: '' });
+  const [bomPackageGenerating, setBomPackageGenerating] = useState(false);
 
   useEffect(() => {
     if (!initialized) {
@@ -129,6 +135,56 @@ export default function ParametricCabinetConfigurator() {
     [safeParams],
   );
   const bom = useMemo(() => buildBillOfMaterials(partsBase, safeParams), [partsBase, safeParams]);
+  const bomCsv = useMemo(() => buildBOMCsv(bom), [bom]);
+  useEffect(() => {
+    let cancelled = false;
+    setGlbGenerating(true);
+    generateCabinetGlbBlob(partsBase)
+      .then((blob) => {
+        if (!cancelled) {
+          setGlbAsset({ blob, sku });
+          setGlbGenerating(false);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Failed to build GLB export', error);
+          setGlbAsset({ blob: null, sku: '' });
+          setGlbGenerating(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [partsBase, sku]);
+  useEffect(() => {
+    if (!glbAsset.blob || glbAsset.sku !== sku) {
+      setBomPackage({ blob: null, sku: '' });
+      setBomPackageGenerating(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setBomPackageGenerating(true);
+    buildBomPackageZip({ sku, csvText: bomCsv, glbBlob: glbAsset.blob })
+      .then((blob) => {
+        if (!cancelled) {
+          setBomPackage({ blob, sku });
+          setBomPackageGenerating(false);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Failed to build BOM package', error);
+          setBomPackage({ blob: null, sku: '' });
+          setBomPackageGenerating(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bomCsv, glbAsset, sku]);
+  const bomPackageReady = Boolean(bomPackage.blob && bomPackage.sku === sku);
+  const glbPreparing = glbGenerating || bomPackageGenerating || !bomPackageReady;
 
   const animateCanvas = turntable || exploded > 0.001;
 
@@ -214,14 +270,14 @@ export default function ParametricCabinetConfigurator() {
 
   const handleExport = useCallback(() => {
     const data = buildSKUObject(safeParams, sku, price, bom);
-    downloadContent(JSON.stringify(data, null, 2), `${sku}.json`, 'application/json');
+    downloadTextContent(JSON.stringify(data, null, 2), `${sku}.json`, 'application/json');
   }, [safeParams, sku, price, bom]);
 
-  const handleExportBomPackage = useCallback(async () => {
-    const csv = buildBOMCsv(bom);
-    downloadContent(csv, `${sku}-bom.csv`, 'text/csv');
-    await exportCabinetGlb(partsBase, `${sku}.glb`);
-  }, [bom, sku, partsBase]);
+  const handleExportBomPackage = useCallback(() => {
+    if (bomPackage.blob && bomPackage.sku === sku) {
+      downloadBlobContent(bomPackage.blob, `${sku}-bom-package.zip`);
+    }
+  }, [bomPackage, sku]);
 
   const handleAutoFix = useCallback((ruleId) => {
     const fixer = AUTO_FIXES[ruleId];
@@ -291,6 +347,8 @@ export default function ParametricCabinetConfigurator() {
                 price={price}
                 onExport={handleExport}
                 onExportBomPackage={handleExportBomPackage}
+                bomPackageReady={bomPackageReady}
+                bomPackagePreparing={glbPreparing}
                 validation={validation}
                 hasBlockingErrors={hasBlockingErrors}
                 presets={presets}
@@ -358,6 +416,7 @@ export default function ParametricCabinetConfigurator() {
             fontSize: 13,
             minWidth: 200,
           }}
+          data-testid="sku-indicator"
         >
           <div><strong>SKU:</strong> {sku}</div>
           <div><strong>Estimate:</strong> ${price.total.toFixed(2)}</div>
@@ -411,15 +470,6 @@ function normalizePricingPreset(value) {
   return preset.id;
 }
 
-function downloadContent(content, filename, mime) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
 function SidebarTabs({ active, onChange }) {
   const tabs = [
     { id: 'design', label: 'Design' },

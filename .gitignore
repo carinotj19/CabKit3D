@@ -12,6 +12,9 @@ node_modules
 # Build
 /dist
 /.vite
+/playwright-report
+/test-results
+/blob-report
 
 # Editor
 .vscode/

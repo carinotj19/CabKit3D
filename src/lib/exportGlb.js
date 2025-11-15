@@ -1,5 +1,6 @@
 ﻿import { Scene, Mesh, BoxGeometry, MeshStandardMaterial, Color, AmbientLight } from 'three';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
+import { downloadBlobContent } from './downloads';
 
 const COLORS = {
   panel: '#d4d8e5',
@@ -8,7 +9,12 @@ const COLORS = {
   hardware: '#8f9cff',
 };
 
-export function exportCabinetGlb(parts, filename = 'cabinet.glb') {
+export async function exportCabinetGlb(parts, filename = 'cabinet.glb') {
+  const blob = await generateCabinetGlbBlob(parts);
+  downloadBlobContent(blob, filename);
+}
+
+export function generateCabinetGlbBlob(parts) {
   return new Promise((resolve, reject) => {
     const scene = new Scene();
     scene.add(new AmbientLight(0xffffff, 1.2));
@@ -28,9 +34,10 @@ export function exportCabinetGlb(parts, filename = 'cabinet.glb') {
     exporter.parse(
       scene,
       (result) => {
-        const blob = result instanceof ArrayBuffer ? new Blob([result], { type: 'model/gltf-binary' }) : new Blob([JSON.stringify(result)], { type: 'application/json' });
-        downloadBlob(blob, filename);
-        resolve();
+        const blob = result instanceof ArrayBuffer
+          ? new Blob([result], { type: 'model/gltf-binary' })
+          : new Blob([JSON.stringify(result)], { type: 'application/json' });
+        resolve(blob);
       },
       (error) => reject(error),
       { binary: true }
@@ -45,11 +52,3 @@ function colorForPart(kind = '') {
   return COLORS.panel;
 }
 
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}

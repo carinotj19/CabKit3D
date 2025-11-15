@@ -28,6 +28,8 @@ export default function ControlsPanel({
   price = { total: 0, currency: 'USD', symbol: '$', breakdown: {} },
   onExport,
   onExportBomPackage = () => {},
+  bomPackageReady = true,
+  bomPackagePreparing = false,
   validation = [],
   hasBlockingErrors = false,
   presets = {},
@@ -226,7 +228,16 @@ export default function ControlsPanel({
           <div><strong>SKU:</strong> {sku}</div>
           <div><strong>Estimate:</strong> {price.symbol}{price.total.toFixed(2)} {price.currency}</div>
           <button onClick={onExport} disabled={hasBlockingErrors}>Download SKU JSON</button>
-          <button onClick={onExportBomPackage}>Download BOM (CSV + GLB)</button>
+          <button
+            onClick={onExportBomPackage}
+            disabled={hasBlockingErrors || !bomPackageReady}
+            data-testid="bom-export-button"
+          >
+            Download BOM (CSV + GLB)
+          </button>
+          {bomPackagePreparing ? (
+            <small style={{ color: '#64748b' }}>Preparing ZIP (CSV + GLB)…</small>
+          ) : null}
           {hasBlockingErrors ? (
             <small style={{ color: '#c53030' }}>Fix blocking errors to export.</small>
           ) : null}

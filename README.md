@@ -38,10 +38,24 @@ Open http://localhost:5173 to see the configurator.
 
 ## Available Scripts
 
-- `npm run dev` – start Vite in dev mode
-- `npm run build` – production bundle
-- `npm run preview` – serve the production build locally
-- `npm run build:ssr && npm run prerender` – optional SSR snapshot (writes `dist-ssr/index.html` for embeds/social previews)
+- `npm run dev` - start Vite in dev mode
+- `npm run build` - production bundle
+- `npm run preview` - serve the production build locally
+- `npm run build:ssr && npm run prerender` - optional SSR snapshot (writes `dist-ssr/index.html` for embeds/social previews)
+- `npm run test` / `npm run test:watch` - Vitest unit/integration suite (cabinet math + store)
+- `npm run test:e2e` - Playwright end-to-end run (records export flow video + generates HTML report)
+
+> ℹ️ After `npm install`, run `npx playwright install --with-deps` once so browsers are available for the e2e suite.
+
+## Testing & Demo Capture
+
+The repo now includes two test tracks:
+
+- **Vitest** (`npm run test`) covers deterministic geometry math (`src/lib/cabinetMath.js`) and Zustand store behavior. Add additional specs under `src/lib/__tests__` or `src/store/__tests__`.
+- **Playwright** (`npm run test:e2e`) boots Vite, drives the “Download BOM (CSV + GLB)” flow, and records a 1280×720 video per run (saved in `test-results/**/video.webm`). Use it as a golden regression test *and* as a shareable demo clip of the export UX. HTML reports land in `playwright-report/`.
+
+The Playwright config lives at `playwright.config.js` and defaults to Chromium Desktop. Override `PLAYWRIGHT_BASE_URL` or `PLAYWRIGHT_WEB_SERVER` for CI/CD.
+By default the e2e runner now boots Vite via `cmd /c "npm run dev -- --host 127.0.0.1 --port 5173"` on Windows (and the same `npm run dev -- --host ...` command directly on other platforms). Override `PLAYWRIGHT_WEB_SERVER` if you need a different server command.
 
 ## Project Structure
 
