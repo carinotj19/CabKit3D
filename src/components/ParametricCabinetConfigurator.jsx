@@ -11,9 +11,11 @@ import ShortcutsOverlay from './ShortcutsOverlay';
 import ShortcutsHelper from './ui/ShortcutsHelper';
 import OnboardingCoach from './OnboardingCoach';
 import { buildBillOfMaterials, buildBOMCsv } from '../lib/bom';
+import { exportCabinetGlb } from '../lib/exportGlb';
 import { getPricingPreset } from '../lib/pricingPresets';
 import { useConfiguratorStore, DEFAULT_PARAMS } from '../store/useConfiguratorStore';
 import { preloadCommonPreset } from '../store/preloadCommonPreset';
+import { buildShareUrl, readParamsFromSearch, buildPreviewUrl } from '../lib/shareLinks';
 const ControlsPanelLazy = lazy(() => import('./ui/ControlsPanel'));
 const MaterialsPanelLazy = lazy(() => import('./ui/MaterialsPanel'));
 
@@ -54,6 +56,10 @@ const AUTO_FIXES = {
     label: 'Use 1.5 mm gap',
     apply: (p) => ({ ...p, gap: Math.max(p.gap, 1.5) }),
   },
+  'load-shelf-spacing': {
+    label: 'Add support shelf',
+    apply: (p) => ({ ...p, shelfCount: Math.min(8, Math.round((p.shelfCount ?? 0) + 1)) }),
+  },
 };
 
 export default function ParametricCabinetConfigurator() {
@@ -72,6 +78,10 @@ export default function ParametricCabinetConfigurator() {
   const initialized = useConfiguratorStore((state) => state.initialized);
   const initializeStore = useConfiguratorStore((state) => state.initialize);
   const resetStore = useConfiguratorStore((state) => state.reset);
+  const [shareReady, setShareReady] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     if (!initialized) {
@@ -79,6 +89,28 @@ export default function ParametricCabinetConfigurator() {
       preloadCommonPreset(useConfiguratorStore.getState());
     }
   }, [initialized, initializeStore]);
+
+  useEffect(() => {
+    if (!initialized || shareReady) return;
+    if (typeof window === 'undefined') return;
+    const sharedParams = readParamsFromSearch(window.location.search);
+    if (sharedParams) {
+      setParams((current) => ({ ...current, ...sharedParams }));
+    }
+    setShareReady(true);
+  }, [initialized, shareReady, setParams]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handlePopState = () => {
+      const sharedParams = readParamsFromSearch(window.location.search);
+      if (sharedParams) {
+        setParams((current) => ({ ...current, ...sharedParams }));
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [setParams]);
 
   const safeParams = useMemo(() => clampParams(params), [params]);
   const preset = useMemo(() => getPricingPreset(safeParams.pricingPreset), [safeParams.pricingPreset]);
@@ -103,6 +135,28 @@ export default function ParametricCabinetConfigurator() {
   const handleParamChange = useCallback((patch) => {
     setParams((current) => ({ ...current, ...patch }));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setShareUrl(buildShareUrl(safeParams, window.location.href));
+  }, [safeParams]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setPreviewUrl(buildPreviewUrl(safeParams, { origin: window.location.origin }));
+  }, [safeParams]);
+
+  useEffect(() => {
+    if (!shareReady || !shareUrl) return;
+    if (typeof window === 'undefined') return;
+    window.history.replaceState({}, '', shareUrl);
+  }, [shareReady, shareUrl]);
+
+  useEffect(() => {
+    if (!shareCopied || typeof window === 'undefined') return undefined;
+    const timer = window.setTimeout(() => setShareCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [shareCopied]);
 
   useEffect(() => {
     const handleAdjust = (event) => {
@@ -160,31 +214,49 @@ export default function ParametricCabinetConfigurator() {
 
   const handleExport = useCallback(() => {
     const data = buildSKUObject(safeParams, sku, price, bom);
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${sku}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadContent(JSON.stringify(data, null, 2), `${sku}.json`, 'application/json');
   }, [safeParams, sku, price, bom]);
 
-  const handleExportCsv = useCallback(() => {
+  const handleExportBomPackage = useCallback(async () => {
     const csv = buildBOMCsv(bom);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${sku}-bom.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }, [bom, sku]);
+    downloadContent(csv, `${sku}-bom.csv`, 'text/csv');
+    await exportCabinetGlb(partsBase, `${sku}.glb`);
+  }, [bom, sku, partsBase]);
 
   const handleAutoFix = useCallback((ruleId) => {
     const fixer = AUTO_FIXES[ruleId];
     if (!fixer) return;
     setParams((current) => fixer.apply ? fixer.apply(current) : current);
   }, []);
+
+  const handleCopyShareLink = useCallback(async () => {
+    if (!shareUrl) return;
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        return;
+      }
+    } catch {
+      // fall back below
+    }
+    if (typeof document !== 'undefined') {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setShareCopied(true);
+      } catch {
+        // ignore copy failure
+      }
+    }
+  }, [shareUrl]);
 
   const isSSR = typeof window === 'undefined';
 
@@ -218,7 +290,7 @@ export default function ParametricCabinetConfigurator() {
                 sku={sku}
                 price={price}
                 onExport={handleExport}
-                onExportCsv={handleExportCsv}
+                onExportBomPackage={handleExportBomPackage}
                 validation={validation}
                 hasBlockingErrors={hasBlockingErrors}
                 presets={presets}
@@ -229,6 +301,10 @@ export default function ParametricCabinetConfigurator() {
                 autoFixes={AUTO_FIXES}
                 onAutoFix={handleAutoFix}
                 pricingPreset={safeParams.pricingPreset}
+                shareUrl={shareUrl}
+                onCopyShareLink={handleCopyShareLink}
+                shareCopied={shareCopied}
+                previewImageUrl={previewUrl}
               />
             ) : (
               <MaterialsPanelLazy params={safeParams} />
@@ -333,6 +409,16 @@ function normalizeHandleOrientation(value) {
 function normalizePricingPreset(value) {
   const preset = getPricingPreset(value);
   return preset.id;
+}
+
+function downloadContent(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 function SidebarTabs({ active, onChange }) {
   const tabs = [

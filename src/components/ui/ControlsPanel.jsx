@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PRICING_PRESETS } from '../../lib/pricingPresets';
 import PricingBreakdownChart from './PricingBreakdownChart';
+import SocialPreviewStrip from './SocialPreviewStrip';
 
 const RULE_FIELD_MAP = {
   'double-door-width': ['width'],
@@ -9,6 +10,7 @@ const RULE_FIELD_MAP = {
   'shelf-height': ['shelfCount'],
   'shelf-density': ['shelfCount'],
   'door-gap': ['gap'],
+  'load-shelf-spacing': ['shelfCount'],
 };
 
 const PRESET_OPTIONS = Object.values(PRICING_PRESETS);
@@ -25,7 +27,7 @@ export default function ControlsPanel({
   sku,
   price = { total: 0, currency: 'USD', symbol: '$', breakdown: {} },
   onExport,
-  onExportCsv,
+  onExportBomPackage = () => {},
   validation = [],
   hasBlockingErrors = false,
   presets = {},
@@ -36,6 +38,10 @@ export default function ControlsPanel({
   autoFixes = {},
   onAutoFix,
   pricingPreset = 'US_STD',
+  shareUrl = '',
+  onCopyShareLink = () => {},
+  shareCopied = false,
+  previewImageUrl = '',
 }) {
   const handleNumber = (key) => (event) => {
     const value = Number(event.target.value);
@@ -85,6 +91,10 @@ export default function ControlsPanel({
   }, [validation]);
 
   const getHints = (field) => hintsByField[field] ?? [];
+  const chartWarnings = useMemo(
+    () => validation.filter((rule) => rule.id.startsWith('load-')),
+    [validation],
+  );
 
   return (
     <div style={{ display: 'grid', gap: 16 }}>
@@ -216,10 +226,37 @@ export default function ControlsPanel({
           <div><strong>SKU:</strong> {sku}</div>
           <div><strong>Estimate:</strong> {price.symbol}{price.total.toFixed(2)} {price.currency}</div>
           <button onClick={onExport} disabled={hasBlockingErrors}>Download SKU JSON</button>
-          <button onClick={onExportCsv}>Download BOM CSV</button>
+          <button onClick={onExportBomPackage}>Download BOM (CSV + GLB)</button>
           {hasBlockingErrors ? (
             <small style={{ color: '#c53030' }}>Fix blocking errors to export.</small>
           ) : null}
+        </div>
+      </Section>
+
+      <Section title="Share & Preview">
+        <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              readOnly
+              value={shareUrl}
+              placeholder="Generate a configuration first"
+              style={{
+                flex: 1,
+                padding: '6px 8px',
+                borderRadius: 6,
+                border: '1px solid #d1d5db',
+                fontSize: 13,
+                color: '#0f172a',
+                background: '#f8fafc',
+              }}
+            />
+            <button onClick={onCopyShareLink} disabled={!shareUrl}>Copy link</button>
+          </div>
+          <small style={{ color: shareCopied ? '#15803d' : '#64748b', fontSize: 12 }}>
+            {shareCopied ? 'Link copied to clipboard.' : 'Permalink encodes every cabinet param in ?cabkit=...'}
+          </small>
+          <SocialPreviewStrip previewUrl={previewImageUrl} />
         </div>
       </Section>
 
@@ -241,6 +278,7 @@ export default function ControlsPanel({
           breakdown={price.breakdown}
           total={price.total}
           currencySymbol={price.symbol}
+          warnings={chartWarnings}
         />
       </Section>
 

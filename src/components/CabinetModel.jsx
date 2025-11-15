@@ -193,7 +193,7 @@ function InstancedBoxes({ parts, material, blueprint }) {
   );
 
   useLayoutEffect(() => {
-    if (!meshRef.current) return;
+    if (blueprint || !meshRef.current) return;
     parts.forEach((part, index) => {
       dummy.position.copy(part.position);
       dummy.scale.copy(part.size);
@@ -202,7 +202,7 @@ function InstancedBoxes({ parts, material, blueprint }) {
       meshRef.current.setMatrixAt(index, dummy.matrix);
     });
     meshRef.current.instanceMatrix.needsUpdate = true;
-  }, [parts, dummy]);
+  }, [parts, dummy, blueprint]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => edgesGeometry.dispose(), [edgesGeometry]);

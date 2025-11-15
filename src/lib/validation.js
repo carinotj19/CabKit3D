@@ -1,3 +1,13 @@
+const MATERIAL_LOAD_SPECS = {
+  ML: { label: 'Melamine light-duty', maxSpacing: 650 },
+  PN: { label: 'Painted MDF', maxSpacing: 600 },
+  WD: { label: 'Solid wood veneer', maxSpacing: 580 },
+  MB: { label: 'Matte black laminate', maxSpacing: 700 },
+  SS: { label: 'Stainless blend', maxSpacing: 720 },
+  PW: { label: 'Premium plywood', maxSpacing: 630 },
+  DEFAULT: { label: 'Standard panel', maxSpacing: 620 },
+};
+
 const RULES = [
   {
     id: 'double-door-width',
@@ -29,14 +39,62 @@ const RULES = [
     test: (p) => p.gap < 1.5 && p.handle !== 'NL',
     message: 'Increase the door gap (>=1.5 mm) for handle clearance.',
   },
+  {
+    id: 'load-shelf-spacing',
+    level: (p) => {
+      const info = getShelfSpacingInfo(p);
+      if (!info) return null;
+      return info.ratio >= 1.3 ? 'error' : 'warning';
+    },
+    test: (p) => {
+      const info = getShelfSpacingInfo(p);
+      if (!info) return false;
+      return info.spacing > info.limit;
+    },
+    message: (p) => {
+      const info = getShelfSpacingInfo(p);
+      if (!info) return '';
+      return `Average shelf spacing ${Math.round(info.spacing)} mm exceeds ${info.label} limit (${info.limit} mm). Add a shelf or upgrade material stiffness.`;
+    },
+  },
 ];
 
 export function validateParams(params) {
-  return RULES.filter((rule) => {
+  return RULES.reduce((acc, rule) => {
     try {
-      return rule.test(params);
+      if (!rule.test(params)) {
+        return acc;
+      }
+      const computedLevel = typeof rule.level === 'function' ? rule.level(params) : rule.level;
+      if (!computedLevel) {
+        return acc;
+      }
+      const computedMessage = typeof rule.message === 'function' ? rule.message(params) : rule.message;
+      acc.push({ id: rule.id, level: computedLevel, message: computedMessage });
     } catch {
-      return false;
+      // Silently ignore malformed rules.
     }
-  }).map(({ id, level, message }) => ({ id, level, message }));
+    return acc;
+  }, []);
+}
+
+function getShelfSpacingInfo(params) {
+  if (!params || params.shelfCount <= 0) return null;
+  const segments = params.shelfCount + 1;
+  if (segments <= 0) return null;
+  const interiorHeight = Math.max(params.height - 2 * params.thickness, 0);
+  if (interiorHeight <= 0) return null;
+  const spacing = interiorHeight / segments;
+  const spec = getMaterialLoadSpec(params.material);
+  const ratio = spacing / spec.maxSpacing;
+  return {
+    spacing,
+    limit: spec.maxSpacing,
+    label: spec.label,
+    ratio,
+  };
+}
+
+function getMaterialLoadSpec(materialKey) {
+  return MATERIAL_LOAD_SPECS[materialKey] || MATERIAL_LOAD_SPECS.DEFAULT;
 }
