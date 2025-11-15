@@ -11,6 +11,7 @@ CabKit3D is a Vite + React + Three.js playground for experimenting with parametr
 - SKU export bundles a BOM-lite array, and a separate BOM CSV download is available for manufacturing estimates
 - Sidebar panels (Design, Materials) are lazy-loaded so the main canvas stays light; Controls panel is code-split from the scene
 - Expanded finish + hardware catalog (matte black, stainless, plywood; bar, knob, D-pull, recessed) with pricing hooks
+- Blueprint mode for wireframe/annotation-ready documentation shots
 - Exploded slider and optional turntable animation for reviewing joinery
 - Instanced cabinet geometry rendered with MeshPhysicalMaterial presets for melamine, paint, and veneer finishes plus baked AO/lightmaps
 - Live price estimate based on a simple area-driven BOM model with shelf + hinge adjustments

@@ -46,6 +46,7 @@ export const useConfiguratorStore = create((set) => ({
   params: DEFAULT_PARAMS,
   exploded: 0,
   turntable: false,
+  blueprintMode: false,
   presets: {},
   validation: [],
   hasBlockingErrors: false,
@@ -74,6 +75,11 @@ export const useConfiguratorStore = create((set) => ({
       turntable: typeof value === 'function' ? value(state.turntable) : value,
     }));
   },
+  setBlueprint(value) {
+    set((state) => ({
+      blueprintMode: typeof value === 'function' ? value(state.blueprintMode) : value,
+    }));
+  },
   setPresets(updater) {
     set((state) => {
       const next = typeof updater === 'function' ? updater(state.presets) : updater;
@@ -90,7 +96,7 @@ export const useConfiguratorStore = create((set) => ({
   },
   reset() {
     writeStorage(STORAGE_KEYS.lastParams, DEFAULT_PARAMS);
-    set({ params: DEFAULT_PARAMS, exploded: 0, turntable: false });
+    set({ params: DEFAULT_PARAMS, exploded: 0, turntable: false, blueprintMode: false });
   },
 }));
 

@@ -20,7 +20,9 @@ function InvalidateOnControls() {
   return null;
 }
 
-export default function SceneCanvas({ children, animate }) {
+export default function SceneCanvas({ children, animate, blueprint = false }) {
+  const background = blueprint ? '#0b1827' : '#f7f8fb';
+  const groundColor = blueprint ? '#132642' : '#e9ecf2';
   return (
     <Canvas
       shadows
@@ -28,23 +30,25 @@ export default function SceneCanvas({ children, animate }) {
       camera={{ position: [1.6, 1.2, 2.0], fov: 45 }}
       frameloop={animate ? 'always' : 'demand'}
     >
-      <color attach="background" args={['#f7f8fb']} />
-      <hemisphereLight intensity={0.6} color="#fff" groundColor="#b1b1b1" />
+      <color attach="background" args={[background]} />
+      <hemisphereLight intensity={blueprint ? 0.3 : 0.6} color="#fff" groundColor="#b1b1b1" />
       <directionalLight
         position={[2.5, 4, 3]}
-        intensity={1.2}
+        intensity={blueprint ? 0.6 : 1.2}
         castShadow
         shadow-mapSize={[1024, 1024]}
       />
-      <Suspense fallback={null}>
-        <HDRIEnvironment />
-      </Suspense>
+      {!blueprint && (
+        <Suspense fallback={null}>
+          <HDRIEnvironment />
+        </Suspense>
+      )}
       <OrbitControls makeDefault enablePan={false} minDistance={0.6} maxDistance={6} />
       <InvalidateOnControls />
 
       <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[10, 10]} />
-        <meshStandardMaterial color="#e9ecf2" roughness={1} />
+        <meshStandardMaterial color={groundColor} roughness={1} />
       </mesh>
 
       {children}

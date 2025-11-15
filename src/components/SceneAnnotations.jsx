@@ -1,14 +1,25 @@
 import { useMemo } from 'react';
 import { Line, Text } from '@react-three/drei';
 
-const DIM_COLOR = '#94a3b8';
-const TRAIL_COLOR = '#cbd5f5';
-const HINGE_COLOR = '#f97316';
+const COLORS = {
+  default: {
+    dim: '#94a3b8',
+    trail: '#cbd5f5',
+    hinge: '#f97316',
+  },
+  blueprint: {
+    dim: '#38bdf8',
+    trail: '#94efff',
+    hinge: '#facc15',
+  },
+};
 
-export default function SceneAnnotations({ params, exploded, parts = [], baseParts = [] }) {
+export default function SceneAnnotations({ params, exploded, parts = [], baseParts = [], blueprint = false }) {
   const width = params.width / 1000;
   const height = params.height / 1000;
   const depth = params.depth / 1000;
+
+  const palette = blueprint ? COLORS.blueprint : COLORS.default;
 
   const baseMap = useMemo(() => {
     const map = new Map();
@@ -35,13 +46,13 @@ export default function SceneAnnotations({ params, exploded, parts = [], basePar
 
   return (
     <group>
-      <DimensionGuides width={width} height={height} depth={depth} />
-      <HingeAnnotations params={params} width={width} height={height} depth={depth} />
+      <DimensionGuides width={width} height={height} depth={depth} palette={palette} />
+      <HingeAnnotations params={params} width={width} height={height} depth={depth} palette={palette} />
       {trails.map((trail) => (
         <Line
           key={`trail-${trail.key}`}
           points={[trail.start, trail.end]}
-          color={TRAIL_COLOR}
+          color={palette.trail}
           lineWidth={1}
           dashed
           dashSize={0.05}
@@ -52,7 +63,7 @@ export default function SceneAnnotations({ params, exploded, parts = [], basePar
   );
 }
 
-function DimensionGuides({ width, height, depth }) {
+function DimensionGuides({ width, height, depth, palette }) {
   return (
     <group>
       <AxisDimension
@@ -61,6 +72,7 @@ function DimensionGuides({ width, height, depth }) {
         position={[0, 0.02, depth / 2 + 0.08]}
         label={`${Math.round(width * 1000)} mm`}
         textOffset={[0, 0.04, 0]}
+        palette={palette}
       />
       <AxisDimension
         axis="y"
@@ -68,6 +80,7 @@ function DimensionGuides({ width, height, depth }) {
         position={[width / 2 + 0.08, height / 2, depth / 2]}
         label={`${Math.round(height * 1000)} mm`}
         textOffset={[0.04, 0, 0]}
+        palette={palette}
       />
       <AxisDimension
         axis="z"
@@ -75,12 +88,13 @@ function DimensionGuides({ width, height, depth }) {
         position={[-width / 2 - 0.08, 0.02, 0]}
         label={`${Math.round(depth * 1000)} mm`}
         textOffset={[0, 0.04, 0]}
+        palette={palette}
       />
     </group>
   );
 }
 
-function AxisDimension({ axis, length, position, label, textOffset }) {
+function AxisDimension({ axis, length, position, label, textOffset, palette }) {
   const half = length / 2;
   const axisDirections = {
     x: { main: [1, 0, 0], tick: [0, 1, 0] },
@@ -123,14 +137,14 @@ function AxisDimension({ axis, length, position, label, textOffset }) {
 
   return (
     <group>
-      <Line points={[start, end]} color={DIM_COLOR} lineWidth={1.25} />
+      <Line points={[start, end]} color={palette.dim} lineWidth={1.25} />
       {ticks.map((tickLine) => (
-        <Line key={tickLine.key} points={tickLine.points} color={DIM_COLOR} lineWidth={1.25} />
+        <Line key={tickLine.key} points={tickLine.points} color={palette.dim} lineWidth={1.25} />
       ))}
       <Text
         position={textPos}
         fontSize={0.045}
-        color={DIM_COLOR}
+        color={palette.dim}
         anchorX="center"
         anchorY="bottom"
         outlineWidth={0.005}
@@ -142,7 +156,7 @@ function AxisDimension({ axis, length, position, label, textOffset }) {
   );
 }
 
-function HingeAnnotations({ params, width, height, depth }) {
+function HingeAnnotations({ params, width, height, depth, palette }) {
   const hingeData = useMemo(() => {
     const items = [];
     const frontZ = depth / 2 + 0.02;
@@ -173,11 +187,11 @@ function HingeAnnotations({ params, width, height, depth }) {
     <group>
       {hingeData.map((hinge) => (
         <group key={hinge.key}>
-          <Line points={hinge.line} color={HINGE_COLOR} lineWidth={1.2} />
+          <Line points={hinge.line} color={palette.hinge} lineWidth={1.2} />
           <Text
             position={hinge.labelPos}
             fontSize={0.04}
-            color={HINGE_COLOR}
+            color={palette.hinge}
             anchorX="center"
             anchorY="middle"
             outlineWidth={0.004}

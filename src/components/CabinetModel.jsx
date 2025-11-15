@@ -6,6 +6,8 @@ import {
   Object3D,
   Color,
   CanvasTexture,
+  EdgesGeometry,
+  LineBasicMaterial,
 } from 'three';
 import HandleBar from './handles/HandleBar';
 import HandleKnob from './handles/HandleKnob';
@@ -49,13 +51,13 @@ const METAL = {
   knob: '#c7c2b5',
 };
 
-export default function CabinetModel({ parts = [], materialKey = 'ML', turntable }) {
+export default function CabinetModel({ parts = [], materialKey = 'ML', turntable, blueprint = false }) {
   const groupRef = useRef();
   const { invalidate } = useThree();
 
   const groupedParts = useMemo(() => groupParts(parts), [parts]);
 
-  const materials = usePBRMaterials(materialKey);
+  const materials = usePBRMaterials(materialKey, blueprint);
 
   useEffect(() => invalidate(), [parts, invalidate]);
 
@@ -66,9 +68,9 @@ export default function CabinetModel({ parts = [], materialKey = 'ML', turntable
 
   return (
     <group ref={groupRef} position={[0, 0, 0]}>
-      <InstancedBoxes parts={groupedParts.carcass} material={materials.carcass} />
-      <InstancedBoxes parts={groupedParts.door} material={materials.door} />
-      <InstancedBoxes parts={groupedParts.shelf} material={materials.shelf} />
+      <InstancedBoxes parts={groupedParts.carcass} material={materials.carcass} blueprint={blueprint} />
+      <InstancedBoxes parts={groupedParts.door} material={materials.door} blueprint={blueprint} />
+      <InstancedBoxes parts={groupedParts.shelf} material={materials.shelf} blueprint={blueprint} />
       {groupedParts.handleBar.map((part) => (
         <HandleBar key={part.key} part={part} material={materials.handleBar} />
       ))}
@@ -113,31 +115,42 @@ function groupParts(parts) {
   );
 }
 
-function usePBRMaterials(materialKey) {
+function usePBRMaterials(materialKey, blueprint) {
   const materials = useMemo(() => {
-    const palette = MATERIAL_LIBRARY[materialKey] ?? MATERIAL_LIBRARY.ML;
-    const lightMap = createLightMapTexture();
+    const palette = blueprint ? null : (MATERIAL_LIBRARY[materialKey] ?? MATERIAL_LIBRARY.ML);
+    const lightMap = blueprint ? null : createLightMapTexture();
+    const baseColor = palette ?? { carcass: '#f0f4ff', door: '#e2e8f0', shelf: '#cbd5f5' };
+    if (blueprint) {
+      return {
+        carcass: createMaterial('#1f5bff', { metalness: 0, roughness: 0.2, clearcoat: 0 }),
+        door: createMaterial('#1b4fd6', { metalness: 0, roughness: 0.2, clearcoat: 0 }),
+        shelf: createMaterial('#3474ff', { metalness: 0, roughness: 0.2, clearcoat: 0 }),
+        handleBar: createMaterial('#f8f8f2', { metalness: 0, roughness: 0.15, clearcoat: 0 }),
+        handleKnob: createMaterial('#f8f8f2', { metalness: 0, roughness: 0.15, clearcoat: 0 }),
+        handleRecessed: createMaterial('#f8f8f2', { metalness: 0, roughness: 0.15, clearcoat: 0 }),
+      };
+    }
     return {
-      carcass: createMaterial(palette.carcass, {
+      carcass: createMaterial(baseColor.carcass, {
         roughness: 0.55,
         clearcoat: 0.08,
         sheen: 0.2,
         lightMap,
         lightMapIntensity: lightMap ? 0.85 : undefined,
       }),
-      door: createMaterial(palette.door, {
+      door: createMaterial(baseColor.door, {
         roughness: 0.4,
         clearcoat: 0.3,
         sheen: 0.35,
         lightMap,
         lightMapIntensity: lightMap ? 0.7 : undefined,
       }),
-      shelf: createMaterial(palette.shelf, { roughness: 0.6, transmission: 0.02 }),
+      shelf: createMaterial(baseColor.shelf, { roughness: 0.6, transmission: 0.02 }),
       handleBar: createMaterial(METAL.bar, { roughness: 0.2, metalness: 0.9, clearcoat: 1 }),
       handleKnob: createMaterial(METAL.knob, { roughness: 0.35, metalness: 0.75, clearcoat: 0.6 }),
       handleRecessed: createMaterial('#444', { roughness: 0.35, metalness: 0.4 }),
     };
-  }, [materialKey]);
+  }, [materialKey, blueprint]);
   useEffect(() => {
     return () => {
       Object.values(materials).forEach((mat) => mat.dispose());
@@ -158,7 +171,7 @@ function createMaterial(color, overrides = {}) {
   });
 }
 
-function InstancedBoxes({ parts, material }) {
+function InstancedBoxes({ parts, material, blueprint }) {
   const meshRef = useRef();
   const geometry = useMemo(() => {
     const geo = new BoxGeometry(1, 1, 1);
@@ -168,6 +181,16 @@ function InstancedBoxes({ parts, material }) {
     return geo;
   }, []);
   const dummy = useMemo(() => new Object3D(), []);
+  const edgesGeometry = useMemo(() => new EdgesGeometry(new BoxGeometry(1, 1, 1)), []);
+  const lineMaterial = useMemo(
+    () =>
+      new LineBasicMaterial({
+        color: '#5ebdff',
+        transparent: true,
+        opacity: 0.9,
+      }),
+    [],
+  );
 
   useLayoutEffect(() => {
     if (!meshRef.current) return;
@@ -182,8 +205,27 @@ function InstancedBoxes({ parts, material }) {
   }, [parts, dummy]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => edgesGeometry.dispose(), [edgesGeometry]);
+  useEffect(() => () => lineMaterial.dispose(), [lineMaterial]);
 
   if (!parts.length) return null;
+
+  if (blueprint) {
+    return (
+      <group>
+        {parts.map((part) => (
+          <lineSegments
+            key={part.key}
+            geometry={edgesGeometry}
+            material={lineMaterial}
+            position={[part.position.x, part.position.y, part.position.z]}
+            rotation={[part.rotation.x, part.rotation.y, part.rotation.z]}
+            scale={[part.size.x, part.size.y, part.size.z]}
+          />
+        ))}
+      </group>
+    );
+  }
 
   return (
     <instancedMesh
@@ -191,7 +233,7 @@ function InstancedBoxes({ parts, material }) {
       ref={meshRef}
       args={[geometry, material, parts.length]}
       castShadow
-      receiveShadow
+      receiveShadow={!blueprint}
     />
   );
 }

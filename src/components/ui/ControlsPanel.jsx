@@ -20,6 +20,8 @@ export default function ControlsPanel({
   onExploded,
   turntable,
   onTurntable,
+  blueprintMode = false,
+  onBlueprintMode = () => {},
   sku,
   price = { total: 0, currency: 'USD', symbol: '$', breakdown: {} },
   onExport,
@@ -198,6 +200,13 @@ export default function ControlsPanel({
             type="checkbox"
             checked={!!turntable}
             onChange={(e) => onTurntable(e.target.checked)}
+          />
+        </Row>
+        <Row label="Blueprint">
+          <input
+            type="checkbox"
+            checked={!!blueprintMode}
+            onChange={(e) => onBlueprintMode(e.target.checked)}
           />
         </Row>
       </Section>

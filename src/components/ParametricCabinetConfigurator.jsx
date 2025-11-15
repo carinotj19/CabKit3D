@@ -63,6 +63,8 @@ export default function ParametricCabinetConfigurator() {
   const setExploded = useConfiguratorStore((state) => state.setExploded);
   const turntable = useConfiguratorStore((state) => state.turntable);
   const setTurntable = useConfiguratorStore((state) => state.setTurntable);
+  const blueprintMode = useConfiguratorStore((state) => state.blueprintMode);
+  const setBlueprintMode = useConfiguratorStore((state) => state.setBlueprint);
   const presets = useConfiguratorStore((state) => state.presets);
   const setPresets = useConfiguratorStore((state) => state.setPresets);
   const setValidationStore = useConfiguratorStore((state) => state.setValidation);
@@ -211,6 +213,8 @@ export default function ParametricCabinetConfigurator() {
                 onExploded={setExploded}
                 turntable={turntable}
                 onTurntable={setTurntable}
+                blueprintMode={blueprintMode}
+                onBlueprintMode={setBlueprintMode}
                 sku={sku}
                 price={price}
                 onExport={handleExport}
@@ -249,17 +253,19 @@ export default function ParametricCabinetConfigurator() {
             CabKit3D preview ready for {sku}
           </div>
         ) : (
-          <SceneCanvas animate={animateCanvas}>
+          <SceneCanvas key={blueprintMode ? 'blueprint' : 'default'} animate={animateCanvas} blueprint={blueprintMode}>
             <CabinetModel
               parts={partsExploded}
               materialKey={safeParams.material}
               turntable={turntable}
+              blueprint={blueprintMode}
             />
             <SceneAnnotations
               params={safeParams}
               exploded={exploded}
               parts={partsExploded}
               baseParts={partsBase}
+              blueprint={blueprintMode}
             />
           </SceneCanvas>
         )}
