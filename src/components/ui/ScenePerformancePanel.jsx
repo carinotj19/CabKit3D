@@ -24,7 +24,7 @@ const ROW_STYLE = {
   color: '#cbd5f5',
 };
 
-export default function ScenePerformancePanel({ stats }) {
+export default function ScenePerformancePanel({ stats, lowPowerMode = false, onToggleLowPower }) {
   const frameMetrics = useFrameMetrics();
   if (!stats) return null;
   const { instancedTotal, drawCalls, gpuMemoryMB, carcass, door, shelf } = stats;
@@ -60,9 +60,32 @@ export default function ScenePerformancePanel({ stats }) {
         <MetricBar label="Shelves" count={shelf} accent="#facc15" />
       </div>
 
-      <div style={{ fontSize: 11, color: '#94a3b8' }}>
-        Instanced transforms recycle a single geometry buffer, so FPS stays high even when you pack the interior with storage.
-      </div>
+      {onToggleLowPower ? (
+        <div style={{ display: 'grid', gap: 6 }}>
+          <button
+            onClick={onToggleLowPower}
+            style={{
+              border: '1px solid rgba(148,163,184,0.5)',
+              background: lowPowerMode ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
+              color: '#e2e8f0',
+              padding: '9px 10px',
+              borderRadius: 10,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {lowPowerMode ? 'Low-power mode: ON' : 'Enable low-power mode'}
+          </button>
+          <div style={{ fontSize: 11, color: '#94a3b8' }}>
+            Cuts HDRI, shadows, and render resolution to stabilize FPS on low-end GPUs or battery devices.
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 11, color: '#94a3b8' }}>
+          Instanced transforms recycle a single geometry buffer, so FPS stays high even when you pack the interior with storage.
+        </div>
+      )}
     </div>
   );
 }

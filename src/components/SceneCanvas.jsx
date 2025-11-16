@@ -20,25 +20,30 @@ function InvalidateOnControls() {
   return null;
 }
 
-export default function SceneCanvas({ children, animate, blueprint = false }) {
+export default function SceneCanvas({ children, animate, blueprint = false, lowPower = false, showFloor = true }) {
   const background = blueprint ? '#0b1827' : '#f7f8fb';
   const groundColor = blueprint ? '#132642' : '#e9ecf2';
+  const renderFloor = showFloor && !lowPower;
   return (
     <Canvas
-      shadows
-      dpr={[1, 2]}
+      shadows={!lowPower}
+      dpr={lowPower ? 1 : [1, 2]}
       camera={{ position: [1.6, 1.2, 2.0], fov: 45 }}
       frameloop={animate ? 'always' : 'demand'}
+      gl={{
+        antialias: !lowPower,
+        powerPreference: lowPower ? 'low-power' : 'high-performance',
+      }}
     >
       <color attach="background" args={[background]} />
-      <hemisphereLight intensity={blueprint ? 0.3 : 0.6} color="#fff" groundColor="#b1b1b1" />
+      <hemisphereLight intensity={blueprint ? 0.3 : lowPower ? 0.45 : 0.6} color="#fff" groundColor="#b1b1b1" />
       <directionalLight
         position={[2.5, 4, 3]}
-        intensity={blueprint ? 0.6 : 1.2}
-        castShadow
-        shadow-mapSize={[1024, 1024]}
+        intensity={blueprint ? 0.6 : lowPower ? 0.85 : 1.2}
+        castShadow={!lowPower}
+        shadow-mapSize={lowPower ? [512, 512] : [1024, 1024]}
       />
-      {!blueprint && (
+      {!blueprint && !lowPower && (
         <Suspense fallback={null}>
           <HDRIEnvironment />
         </Suspense>
@@ -46,10 +51,12 @@ export default function SceneCanvas({ children, animate, blueprint = false }) {
       <OrbitControls makeDefault enablePan={false} minDistance={0.6} maxDistance={6} />
       <InvalidateOnControls />
 
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[10, 10]} />
-        <meshStandardMaterial color={groundColor} roughness={1} />
-      </mesh>
+      {renderFloor ? (
+        <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]} receiveShadow={!lowPower}>
+          <planeGeometry args={[8, 8]} />
+          <meshStandardMaterial color={groundColor} roughness={1} />
+        </mesh>
+      ) : null}
 
       {children}
 

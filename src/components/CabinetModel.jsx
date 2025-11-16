@@ -51,13 +51,13 @@ const METAL = {
   knob: '#c7c2b5',
 };
 
-export default function CabinetModel({ parts = [], materialKey = 'ML', turntable, blueprint = false }) {
+export default function CabinetModel({ parts = [], materialKey = 'ML', turntable, blueprint = false, lowPower = false }) {
   const groupRef = useRef();
   const { invalidate } = useThree();
 
   const groupedParts = useMemo(() => groupParts(parts), [parts]);
 
-  const materials = usePBRMaterials(materialKey, blueprint);
+  const materials = usePBRMaterials(materialKey, blueprint, lowPower);
 
   useEffect(() => invalidate(), [parts, invalidate]);
 
@@ -68,9 +68,9 @@ export default function CabinetModel({ parts = [], materialKey = 'ML', turntable
 
   return (
     <group ref={groupRef} position={[0, 0, 0]}>
-      <InstancedBoxes parts={groupedParts.carcass} material={materials.carcass} blueprint={blueprint} />
-      <InstancedBoxes parts={groupedParts.door} material={materials.door} blueprint={blueprint} />
-      <InstancedBoxes parts={groupedParts.shelf} material={materials.shelf} blueprint={blueprint} />
+      <InstancedBoxes parts={groupedParts.carcass} material={materials.carcass} blueprint={blueprint} lowPower={lowPower} />
+      <InstancedBoxes parts={groupedParts.door} material={materials.door} blueprint={blueprint} lowPower={lowPower} />
+      <InstancedBoxes parts={groupedParts.shelf} material={materials.shelf} blueprint={blueprint} lowPower={lowPower} />
       {groupedParts.handleBar.map((part) => (
         <HandleBar key={part.key} part={part} material={materials.handleBar} />
       ))}
@@ -115,10 +115,11 @@ function groupParts(parts) {
   );
 }
 
-function usePBRMaterials(materialKey, blueprint) {
+function usePBRMaterials(materialKey, blueprint, lowPower) {
   const materials = useMemo(() => {
     const palette = blueprint ? null : (MATERIAL_LIBRARY[materialKey] ?? MATERIAL_LIBRARY.ML);
-    const lightMap = blueprint ? null : createLightMapTexture();
+    const enableLightMap = !blueprint && !lowPower;
+    const lightMap = enableLightMap ? createLightMapTexture() : null;
     const baseColor = palette ?? { carcass: '#f0f4ff', door: '#e2e8f0', shelf: '#cbd5f5' };
     if (blueprint) {
       return {
@@ -132,25 +133,41 @@ function usePBRMaterials(materialKey, blueprint) {
     }
     return {
       carcass: createMaterial(baseColor.carcass, {
-        roughness: 0.55,
-        clearcoat: 0.08,
-        sheen: 0.2,
+        roughness: lowPower ? 0.72 : 0.55,
+        clearcoat: lowPower ? 0 : 0.08,
+        sheen: lowPower ? 0 : 0.2,
         lightMap,
         lightMapIntensity: lightMap ? 0.85 : undefined,
+        flatShading: lowPower,
       }),
       door: createMaterial(baseColor.door, {
-        roughness: 0.4,
-        clearcoat: 0.3,
-        sheen: 0.35,
+        roughness: lowPower ? 0.62 : 0.4,
+        clearcoat: lowPower ? 0 : 0.3,
+        sheen: lowPower ? 0 : 0.35,
         lightMap,
         lightMapIntensity: lightMap ? 0.7 : undefined,
+        flatShading: lowPower,
       }),
-      shelf: createMaterial(baseColor.shelf, { roughness: 0.6, transmission: 0.02 }),
-      handleBar: createMaterial(METAL.bar, { roughness: 0.2, metalness: 0.9, clearcoat: 1 }),
-      handleKnob: createMaterial(METAL.knob, { roughness: 0.35, metalness: 0.75, clearcoat: 0.6 }),
-      handleRecessed: createMaterial('#444', { roughness: 0.35, metalness: 0.4 }),
+      shelf: createMaterial(baseColor.shelf, {
+        roughness: lowPower ? 0.75 : 0.6,
+        transmission: lowPower ? 0 : 0.02,
+        flatShading: lowPower,
+      }),
+      handleBar: createMaterial(METAL.bar, {
+        roughness: lowPower ? 0.35 : 0.2,
+        metalness: lowPower ? 0.65 : 0.9,
+        clearcoat: lowPower ? 0 : 1,
+        flatShading: lowPower,
+      }),
+      handleKnob: createMaterial(METAL.knob, {
+        roughness: lowPower ? 0.5 : 0.35,
+        metalness: lowPower ? 0.55 : 0.75,
+        clearcoat: lowPower ? 0 : 0.6,
+        flatShading: lowPower,
+      }),
+      handleRecessed: createMaterial('#444', { roughness: 0.35, metalness: 0.4, flatShading: lowPower }),
     };
-  }, [materialKey, blueprint]);
+  }, [materialKey, blueprint, lowPower]);
   useEffect(() => {
     return () => {
       Object.values(materials).forEach((mat) => mat.dispose());
@@ -171,7 +188,7 @@ function createMaterial(color, overrides = {}) {
   });
 }
 
-function InstancedBoxes({ parts, material, blueprint }) {
+function InstancedBoxes({ parts, material, blueprint, lowPower = false }) {
   const meshRef = useRef();
   const geometry = useMemo(() => {
     const geo = new BoxGeometry(1, 1, 1);
@@ -232,8 +249,8 @@ function InstancedBoxes({ parts, material, blueprint }) {
       key={`${material.uuid}-${parts.length}`}
       ref={meshRef}
       args={[geometry, material, parts.length]}
-      castShadow
-      receiveShadow={!blueprint}
+      castShadow={!blueprint && !lowPower}
+      receiveShadow={!blueprint && !lowPower}
     />
   );
 }

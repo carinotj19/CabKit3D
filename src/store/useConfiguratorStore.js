@@ -21,6 +21,7 @@ export const DEFAULT_PARAMS = {
 export const STORAGE_KEYS = {
   lastParams: 'cabkit3d:lastParams',
   presets: 'cabkit3d:presets',
+  lowPower: 'cabkit3d:lowPower',
 };
 
 function readStorage(key, fallback) {
@@ -47,16 +48,19 @@ export const useConfiguratorStore = create((set) => ({
   exploded: 0,
   turntable: false,
   blueprintMode: false,
+  lowPowerMode: false,
   presets: {},
   validation: [],
   hasBlockingErrors: false,
   onboardingSeen: false,
   initialized: false,
   initialize() {
+    const lowPowerDefault = detectLowPowerDefault();
     set({
       params: readStorage(STORAGE_KEYS.lastParams, DEFAULT_PARAMS),
       presets: readStorage(STORAGE_KEYS.presets, {}),
       onboardingSeen: !!readStorage('cabkit3d:onboarding', false),
+      lowPowerMode: readStorage(STORAGE_KEYS.lowPower, lowPowerDefault),
       initialized: true,
     });
   },
@@ -80,6 +84,13 @@ export const useConfiguratorStore = create((set) => ({
       blueprintMode: typeof value === 'function' ? value(state.blueprintMode) : value,
     }));
   },
+  setLowPowerMode(value) {
+    set((state) => {
+      const next = typeof value === 'function' ? value(state.lowPowerMode) : value;
+      writeStorage(STORAGE_KEYS.lowPower, next);
+      return { lowPowerMode: next };
+    });
+  },
   setPresets(updater) {
     set((state) => {
       const next = typeof updater === 'function' ? updater(state.presets) : updater;
@@ -95,11 +106,27 @@ export const useConfiguratorStore = create((set) => ({
     set({ onboardingSeen: true });
   },
   reset() {
+    const lowPowerDefault = detectLowPowerDefault();
     writeStorage(STORAGE_KEYS.lastParams, DEFAULT_PARAMS);
-    set({ params: DEFAULT_PARAMS, exploded: 0, turntable: false, blueprintMode: false });
+    writeStorage(STORAGE_KEYS.lowPower, lowPowerDefault);
+    set({
+      params: DEFAULT_PARAMS,
+      exploded: 0,
+      turntable: false,
+      blueprintMode: false,
+      lowPowerMode: lowPowerDefault,
+    });
   },
 }));
 
 if (typeof window !== 'undefined') {
   useConfiguratorStore.getState().initialize();
+}
+
+function detectLowPowerDefault() {
+  if (typeof window === 'undefined') return false;
+  const prefersReduceMotion = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const limitedMemory = typeof navigator !== 'undefined' && navigator.deviceMemory && navigator.deviceMemory <= 4;
+  const fewCores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+  return prefersReduceMotion || limitedMemory || fewCores;
 }

@@ -74,6 +74,8 @@ export default function ParametricCabinetConfigurator() {
   const setTurntable = useConfiguratorStore((state) => state.setTurntable);
   const blueprintMode = useConfiguratorStore((state) => state.blueprintMode);
   const setBlueprintMode = useConfiguratorStore((state) => state.setBlueprint);
+  const lowPowerMode = useConfiguratorStore((state) => state.lowPowerMode);
+  const setLowPowerMode = useConfiguratorStore((state) => state.setLowPowerMode);
   const presets = useConfiguratorStore((state) => state.presets);
   const setPresets = useConfiguratorStore((state) => state.setPresets);
   const setValidationStore = useConfiguratorStore((state) => state.setValidation);
@@ -389,12 +391,19 @@ export default function ParametricCabinetConfigurator() {
             CabKit3D preview ready for {sku}
           </div>
         ) : (
-          <SceneCanvas key={blueprintMode ? 'blueprint' : 'default'} animate={animateCanvas} blueprint={blueprintMode}>
+          <SceneCanvas
+            key={`${blueprintMode ? 'blueprint' : 'default'}-${lowPowerMode ? 'lp' : 'hp'}`}
+            animate={animateCanvas}
+            blueprint={blueprintMode}
+            lowPower={lowPowerMode}
+            showFloor={!lowPowerMode}
+          >
             <CabinetModel
               parts={partsExploded}
               materialKey={safeParams.material}
               turntable={turntable}
               blueprint={blueprintMode}
+              lowPower={lowPowerMode}
             />
             <SceneAnnotations
               params={safeParams}
@@ -406,7 +415,11 @@ export default function ParametricCabinetConfigurator() {
           </SceneCanvas>
         )}
 
-        <ScenePerformancePanel stats={instancingStats} />
+        <ScenePerformancePanel
+          stats={instancingStats}
+          lowPowerMode={lowPowerMode}
+          onToggleLowPower={() => setLowPowerMode((current) => !current)}
+        />
 
         <div
           style={{
