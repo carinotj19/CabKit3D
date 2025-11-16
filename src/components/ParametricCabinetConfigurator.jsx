@@ -1,4 +1,5 @@
-import { useMemo, useCallback, useEffect, useState, Suspense, lazy } from 'react';
+import { useMemo, useCallback, useEffect, useState, Suspense, lazy, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { AnimatePresence, motion } from 'framer-motion';
 import SceneCanvas from './SceneCanvas';
 import CabinetModel from './CabinetModel';
@@ -398,20 +399,21 @@ export default function ParametricCabinetConfigurator() {
             lowPower={lowPowerMode}
             showFloor={!lowPowerMode}
           >
-            <CabinetModel
-              parts={partsExploded}
-              materialKey={safeParams.material}
-              turntable={turntable}
-              blueprint={blueprintMode}
-              lowPower={lowPowerMode}
-            />
-            <SceneAnnotations
-              params={safeParams}
-              exploded={exploded}
-              parts={partsExploded}
-              baseParts={partsBase}
-              blueprint={blueprintMode}
-            />
+            <TurntableGroup turntable={turntable}>
+              <CabinetModel
+                parts={partsExploded}
+                materialKey={safeParams.material}
+                blueprint={blueprintMode}
+                lowPower={lowPowerMode}
+              />
+              <SceneAnnotations
+                params={safeParams}
+                exploded={exploded}
+                parts={partsExploded}
+                baseParts={partsBase}
+                blueprint={blueprintMode}
+              />
+            </TurntableGroup>
           </SceneCanvas>
         )}
 
@@ -485,6 +487,15 @@ function normalizeHandleOrientation(value) {
 function normalizePricingPreset(value) {
   const preset = getPricingPreset(value);
   return preset.id;
+}
+
+function TurntableGroup({ children, turntable }) {
+  const groupRef = useRef();
+  useFrame((_, delta) => {
+    if (!turntable || !groupRef.current) return;
+    groupRef.current.rotation.y += delta * 0.5;
+  });
+  return <group ref={groupRef}>{children}</group>;
 }
 
 function summarizeInstancing(parts = []) {

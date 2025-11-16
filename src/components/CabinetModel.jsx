@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect, useLayoutEffect } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import {
   MeshPhysicalMaterial,
   BoxGeometry,
@@ -51,7 +51,7 @@ const METAL = {
   knob: '#c7c2b5',
 };
 
-export default function CabinetModel({ parts = [], materialKey = 'ML', turntable, blueprint = false, lowPower = false }) {
+export default function CabinetModel({ parts = [], materialKey = 'ML', blueprint = false, lowPower = false }) {
   const groupRef = useRef();
   const { invalidate } = useThree();
 
@@ -60,11 +60,6 @@ export default function CabinetModel({ parts = [], materialKey = 'ML', turntable
   const materials = usePBRMaterials(materialKey, blueprint, lowPower);
 
   useEffect(() => invalidate(), [parts, invalidate]);
-
-  useFrame((_, delta) => {
-    if (!groupRef.current || !turntable) return;
-    groupRef.current.rotation.y += delta * 0.5;
-  });
 
   return (
     <group ref={groupRef} position={[0, 0, 0]}>
