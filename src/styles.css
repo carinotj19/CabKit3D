@@ -28,3 +28,10 @@ input[type='number'],
 input[type='range'] {
   font-size: 14px;
 }
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}

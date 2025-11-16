@@ -205,6 +205,8 @@ export default function ControlsPanel({
             step={0.01}
             value={exploded}
             onChange={(e) => onExploded(Number(e.target.value))}
+            aria-label="Exploded view amount"
+            aria-valuetext={`${Math.round(exploded * 100)}% exploded`}
           />
         </Row>
         <Row label="Turntable">
@@ -212,6 +214,7 @@ export default function ControlsPanel({
             type="checkbox"
             checked={!!turntable}
             onChange={(e) => onTurntable(e.target.checked)}
+            aria-label="Toggle turntable auto-rotation"
           />
         </Row>
         <Row label="Blueprint">
@@ -219,6 +222,7 @@ export default function ControlsPanel({
             type="checkbox"
             checked={!!blueprintMode}
             onChange={(e) => onBlueprintMode(e.target.checked)}
+            aria-label="Toggle blueprint rendering mode"
           />
         </Row>
       </Section>

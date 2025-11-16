@@ -64,6 +64,8 @@ export default function ScenePerformancePanel({ stats, lowPowerMode = false, onT
         <div style={{ display: 'grid', gap: 6 }}>
           <button
             onClick={onToggleLowPower}
+            aria-pressed={!!lowPowerMode}
+            aria-label={lowPowerMode ? 'Disable low-power mode' : 'Enable low-power mode'}
             style={{
               border: '1px solid rgba(148,163,184,0.5)',
               background: lowPowerMode ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',

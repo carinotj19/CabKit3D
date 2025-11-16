@@ -1,6 +1,6 @@
 ﻿import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, StatsGl } from '@react-three/drei';
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 
 const HDRIEnvironment = lazy(() => import('./environment/HDRIEnvironment'));
 
@@ -20,10 +20,19 @@ function InvalidateOnControls() {
   return null;
 }
 
-export default function SceneCanvas({ children, animate, blueprint = false, lowPower = false, showFloor = true }) {
+export default function SceneCanvas({ children, animate, blueprint = false, lowPower = false, showFloor = true, resetViewToken }) {
   const background = blueprint ? '#0b1827' : '#f7f8fb';
   const groundColor = blueprint ? '#132642' : '#e9ecf2';
   const renderFloor = showFloor && !lowPower;
+  const controlsRef = useRef();
+
+  useEffect(() => {
+    if (!resetViewToken) return;
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+      controlsRef.current.update();
+    }
+  }, [resetViewToken]);
   return (
     <Canvas
       shadows={!lowPower}
@@ -48,7 +57,7 @@ export default function SceneCanvas({ children, animate, blueprint = false, lowP
           <HDRIEnvironment />
         </Suspense>
       )}
-      <OrbitControls makeDefault enablePan={false} minDistance={0.6} maxDistance={6} />
+      <OrbitControls ref={controlsRef} makeDefault enablePan={false} minDistance={0.6} maxDistance={6} />
       <InvalidateOnControls />
 
       {renderFloor ? (

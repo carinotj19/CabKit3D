@@ -92,6 +92,9 @@ export default function ParametricCabinetConfigurator() {
   const [glbGenerating, setGlbGenerating] = useState(false);
   const [bomPackage, setBomPackage] = useState({ blob: null, sku: '' });
   const [bomPackageGenerating, setBomPackageGenerating] = useState(false);
+  const [resetViewToken, setResetViewToken] = useState(0);
+  const [showConfigurator, setShowConfigurator] = useState(true);
+  const [showPerformancePanel, setShowPerformancePanel] = useState(true);
 
   useEffect(() => {
     if (!initialized) {
@@ -273,6 +276,10 @@ export default function ParametricCabinetConfigurator() {
     resetStore();
   }, [resetStore]);
 
+  const handleResetView = useCallback(() => {
+    setResetViewToken((token) => token + 1);
+  }, []);
+
   const handleExport = useCallback(() => {
     const data = buildSKUObject(safeParams, sku, price, bom);
     downloadTextContent(JSON.stringify(data, null, 2), `${sku}.json`, 'application/json');
@@ -320,61 +327,64 @@ export default function ParametricCabinetConfigurator() {
   }, [shareUrl]);
 
   const isSSR = typeof window === 'undefined';
+  const gridColumns = showConfigurator ? '360px 1fr' : '1fr';
 
   return (
     <>
       <ShortcutsOverlay />
       <ShortcutsHelper />
       <OnboardingCoach />
-      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', height: '100dvh' }}>
-      <AnimatePresence initial={false} mode="sync">
-        <motion.div
-          key="controls"
-          initial={{ x: -24, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -24, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 280, damping: 32 }}
-          style={{ borderRight: '1px solid #eceff4', padding: '20px', overflow: 'auto', background: '#fbfcff', display: 'grid', gap: 12 }}
-        >
-          <SidebarTabs active={sidebarTab} onChange={setSidebarTab} />
-          <Suspense fallback={<div style={{ padding: '16px 0', color: '#94a3b8' }}>Loading panel...</div>}>
-            {sidebarTab === 'design' ? (
-              <ControlsPanelLazy
-                params={safeParams}
-                onChange={handleParamChange}
-                exploded={exploded}
-                onExploded={setExploded}
-                turntable={turntable}
-                onTurntable={setTurntable}
-                blueprintMode={blueprintMode}
-                onBlueprintMode={setBlueprintMode}
-                sku={sku}
-                price={price}
-                onExport={handleExport}
-                onExportBomPackage={handleExportBomPackage}
-                bomPackageReady={bomPackageReady}
-                bomPackagePreparing={glbPreparing}
-                validation={validation}
-                hasBlockingErrors={hasBlockingErrors}
-                presets={presets}
-                onPresetSave={handlePresetSave}
-                onPresetLoad={handlePresetLoad}
-                onPresetDelete={handlePresetDelete}
-                onReset={handleReset}
-                autoFixes={AUTO_FIXES}
-                onAutoFix={handleAutoFix}
-                pricingPreset={safeParams.pricingPreset}
-                shareUrl={shareUrl}
-                onCopyShareLink={handleCopyShareLink}
-                shareCopied={shareCopied}
-                previewImageUrl={previewUrl}
-              />
-            ) : (
-              <MaterialsPanelLazy params={safeParams} />
-            )}
-          </Suspense>
-        </motion.div>
-      </AnimatePresence>
+      <div style={{ display: 'grid', gridTemplateColumns: gridColumns, height: '100dvh' }}>
+        <AnimatePresence initial={false} mode="sync">
+          {showConfigurator ? (
+            <motion.div
+              key="controls"
+              initial={{ x: -24, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -24, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 32 }}
+              style={{ borderRight: '1px solid #eceff4', padding: '20px', overflow: 'auto', background: '#fbfcff', display: 'grid', gap: 12 }}
+            >
+              <SidebarTabs active={sidebarTab} onChange={setSidebarTab} />
+              <Suspense fallback={<div style={{ padding: '16px 0', color: '#94a3b8' }}>Loading panel...</div>}>
+                {sidebarTab === 'design' ? (
+                  <ControlsPanelLazy
+                    params={safeParams}
+                    onChange={handleParamChange}
+                    exploded={exploded}
+                    onExploded={setExploded}
+                    turntable={turntable}
+                    onTurntable={setTurntable}
+                    blueprintMode={blueprintMode}
+                    onBlueprintMode={setBlueprintMode}
+                    sku={sku}
+                    price={price}
+                    onExport={handleExport}
+                    onExportBomPackage={handleExportBomPackage}
+                    bomPackageReady={bomPackageReady}
+                    bomPackagePreparing={glbPreparing}
+                    validation={validation}
+                    hasBlockingErrors={hasBlockingErrors}
+                    presets={presets}
+                    onPresetSave={handlePresetSave}
+                    onPresetLoad={handlePresetLoad}
+                    onPresetDelete={handlePresetDelete}
+                    onReset={handleReset}
+                    autoFixes={AUTO_FIXES}
+                    onAutoFix={handleAutoFix}
+                    pricingPreset={safeParams.pricingPreset}
+                    shareUrl={shareUrl}
+                    onCopyShareLink={handleCopyShareLink}
+                    shareCopied={shareCopied}
+                    previewImageUrl={previewUrl}
+                  />
+                ) : (
+                  <MaterialsPanelLazy params={safeParams} />
+                )}
+              </Suspense>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
       <div style={{ position: 'relative' }}>
         {isSSR ? (
@@ -398,6 +408,7 @@ export default function ParametricCabinetConfigurator() {
             blueprint={blueprintMode}
             lowPower={lowPowerMode}
             showFloor={!lowPowerMode}
+            resetViewToken={resetViewToken}
           >
             <TurntableGroup turntable={turntable}>
               <CabinetModel
@@ -417,11 +428,29 @@ export default function ParametricCabinetConfigurator() {
           </SceneCanvas>
         )}
 
-        <ScenePerformancePanel
-          stats={instancingStats}
-          lowPowerMode={lowPowerMode}
-          onToggleLowPower={() => setLowPowerMode((current) => !current)}
-        />
+        {!isSSR ? (
+          <ViewControlsOverlay
+            turntable={turntable}
+            blueprintMode={blueprintMode}
+            lowPowerMode={lowPowerMode}
+            showConfigurator={showConfigurator}
+            showPerformancePanel={showPerformancePanel}
+            onToggleTurntable={() => setTurntable((current) => !current)}
+            onToggleBlueprint={() => setBlueprintMode((current) => !current)}
+            onToggleLowPower={() => setLowPowerMode((current) => !current)}
+            onToggleConfigurator={() => setShowConfigurator((current) => !current)}
+            onTogglePerformancePanel={() => setShowPerformancePanel((current) => !current)}
+            onResetView={handleResetView}
+          />
+        ) : null}
+
+        {showPerformancePanel ? (
+          <ScenePerformancePanel
+            stats={instancingStats}
+            lowPowerMode={lowPowerMode}
+            onToggleLowPower={() => setLowPowerMode((current) => !current)}
+          />
+        ) : null}
 
         <div
           style={{
@@ -521,6 +550,152 @@ function summarizeInstancing(parts = []) {
     gpuMemoryMB,
     total: parts.length,
   };
+}
+
+function ViewControlsOverlay({
+  turntable,
+  blueprintMode,
+  lowPowerMode,
+  showConfigurator,
+  showPerformancePanel,
+  onToggleTurntable,
+  onToggleBlueprint,
+  onToggleLowPower,
+  onToggleConfigurator,
+  onTogglePerformancePanel,
+  onResetView,
+}) {
+  const [focusedId, setFocusedId] = useState('');
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 16,
+        left: 16,
+        padding: 12,
+        background: 'rgba(255, 255, 255, 0.95)',
+        borderRadius: 12,
+        boxShadow: '0 12px 30px rgba(15, 23, 42, 0.18)',
+        width: 260,
+        display: 'grid',
+        gap: 8,
+        zIndex: 25,
+      }}
+      aria-label="Scene view controls"
+    >
+      <div style={{ fontWeight: 700, fontSize: 12, color: '#1e293b', letterSpacing: 0.6, textTransform: 'uppercase' }}>
+        View controls
+      </div>
+      <div style={{ display: 'grid', gap: 6 }}>
+        <ViewControlButton
+          id="reset-view"
+          label="Reset view"
+          description="Recenter camera and orbit target"
+          onClick={onResetView}
+          ariaLabel="Reset camera view to default"
+          focused={focusedId === 'reset-view'}
+          onFocus={() => setFocusedId('reset-view')}
+          onBlur={() => setFocusedId((current) => (current === 'reset-view' ? '' : current))}
+        />
+        <ViewControlButton
+          id="turntable"
+          label="Turntable"
+          description={turntable ? 'Auto-rotate is on (Space to toggle)' : 'Auto-rotate is off (Space to toggle)'}
+          onClick={() => onToggleTurntable?.(!turntable)}
+          pressed={!!turntable}
+          ariaLabel={turntable ? 'Disable turntable auto-rotation' : 'Enable turntable auto-rotation'}
+          focused={focusedId === 'turntable'}
+          onFocus={() => setFocusedId('turntable')}
+          onBlur={() => setFocusedId((current) => (current === 'turntable' ? '' : current))}
+        />
+        <ViewControlButton
+          id="blueprint"
+          label="Blueprint mode"
+          description={blueprintMode ? 'Blueprint shading enabled' : 'Standard shading'}
+          onClick={() => onToggleBlueprint?.(!blueprintMode)}
+          pressed={!!blueprintMode}
+          ariaLabel={blueprintMode ? 'Disable blueprint mode' : 'Enable blueprint mode'}
+          focused={focusedId === 'blueprint'}
+          onFocus={() => setFocusedId('blueprint')}
+          onBlur={() => setFocusedId((current) => (current === 'blueprint' ? '' : current))}
+        />
+        <ViewControlButton
+          id="lowpower"
+          label="Low-power mode"
+          description={lowPowerMode ? 'Performance saver enabled' : 'Full quality rendering'}
+          onClick={() => onToggleLowPower?.(!lowPowerMode)}
+          pressed={!!lowPowerMode}
+          ariaLabel={lowPowerMode ? 'Disable low-power rendering' : 'Enable low-power rendering'}
+          focused={focusedId === 'lowpower'}
+          onFocus={() => setFocusedId('lowpower')}
+          onBlur={() => setFocusedId((current) => (current === 'lowpower' ? '' : current))}
+        />
+        <ViewControlButton
+          id="configurator"
+          label="Configurator"
+          description={showConfigurator ? 'Left panel is visible' : 'Left panel hidden (click to show)'}
+          onClick={() => onToggleConfigurator?.(!showConfigurator)}
+          pressed={!!showConfigurator}
+          ariaLabel={showConfigurator ? 'Hide configurator panel' : 'Show configurator panel'}
+          focused={focusedId === 'configurator'}
+          onFocus={() => setFocusedId('configurator')}
+          onBlur={() => setFocusedId((current) => (current === 'configurator' ? '' : current))}
+        />
+        <ViewControlButton
+          id="performance"
+          label="Scene performance"
+          description={showPerformancePanel ? 'Performance card is visible' : 'Performance card hidden (click to show)'}
+          onClick={() => onTogglePerformancePanel?.(!showPerformancePanel)}
+          pressed={!!showPerformancePanel}
+          ariaLabel={showPerformancePanel ? 'Hide scene performance panel' : 'Show scene performance panel'}
+          focused={focusedId === 'performance'}
+          onFocus={() => setFocusedId('performance')}
+          onBlur={() => setFocusedId((current) => (current === 'performance' ? '' : current))}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ViewControlButton({ id, label, description, onClick, pressed, ariaLabel, focused, onFocus, onBlur }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel || label}
+      aria-pressed={typeof pressed === 'boolean' ? pressed : undefined}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'auto 1fr',
+        alignItems: 'center',
+        gap: 10,
+        width: '100%',
+        borderRadius: 10,
+        border: '1px solid',
+        borderColor: pressed ? '#4f46e5' : '#e2e8f0',
+        background: pressed ? '#eef2ff' : '#ffffff',
+        color: '#0f172a',
+        padding: '9px 10px',
+        cursor: 'pointer',
+        textAlign: 'left',
+        boxShadow: focused ? '0 0 0 3px rgba(79,70,229,0.35), 0 8px 20px rgba(15,23,42,0.1)' : '0 8px 20px rgba(15,23,42,0.08)',
+        outline: focused ? '2px solid #4f46e5' : 'none',
+        transition: 'box-shadow 120ms ease, outline 120ms ease, border-color 120ms ease',
+      }}
+      title={label}
+      data-testid={`${id}-button`}
+    >
+      <span aria-hidden style={{ fontWeight: 700, color: pressed ? '#4338ca' : '#475569', fontSize: 12 }}>
+        {typeof pressed === 'boolean' ? (pressed ? 'On' : 'Off') : 'RST'}
+      </span>
+      <span>
+        <div style={{ fontWeight: 600, fontSize: 14 }}>{label}</div>
+        {description ? <div style={{ fontSize: 12, color: '#475569' }}>{description}</div> : null}
+      </span>
+    </button>
+  );
 }
 
 function SidebarTabs({ active, onChange }) {

@@ -2,6 +2,12 @@
 
 CabKit3D is a Vite + React + Three.js playground for experimenting with parametric cabinet geometry, exploded/turntable scene modes, live pricing, and deterministic SKU exports. The UI focuses on quick tweaking of millimeter dimensions while keeping the repo small and easy to extend.
 
+## Portfolio
+
+- Live demo: https://your-username.github.io/CabKit3D/ (enable GitHub Pages to activate)
+- Demo clip: reuse the Playwright-recorded `video.webm` from `npm run test:e2e` or capture a quick sequence (tweak → explode/turntable → download BOM+GLB → toggle low-power mode) and link it here.
+- Performance callout: mention low-power mode (cuts HDRI/shadows/DPR) and the reset-view control to show polish.
+
 ## Features
 
 - Adjustable width, height, depth, carcass thickness, back panel thickness, shelf count, gaps, and door thickness
