@@ -467,7 +467,7 @@ export default function ParametricCabinetConfigurator() {
           data-testid="sku-indicator"
         >
           <div><strong>SKU:</strong> {sku}</div>
-          <div><strong>Estimate:</strong> ${price.total.toFixed(2)}</div>
+          <div><strong>Estimate:</strong> {price.symbol}{price.total.toFixed(2)}</div>
           {hasBlockingErrors ? (
             <div style={{ color: '#c53030', marginTop: 6 }}>Resolve errors before exporting.</div>
           ) : null}

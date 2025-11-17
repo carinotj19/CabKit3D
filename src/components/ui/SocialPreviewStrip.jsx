@@ -54,7 +54,7 @@ export default function SocialPreviewStrip({ previewUrl }) {
             letterSpacing: 0.4,
           }}
         >
-          1200 × 630 SSR frame
+          1200 x 630 SSR frame
         </div>
       </div>
       <p style={{ margin: 0, fontSize: 12, color: '#475569' }}>

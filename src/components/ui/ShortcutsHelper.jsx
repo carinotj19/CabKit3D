@@ -1,9 +1,9 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const SHORTCUTS = [
-  '← / → resize width (Shift = 1mm)',
-  '↑ / ↓ resize height (Shift = 1mm)',
-  'Alt + ↑ / ↓ resize depth',
+  'Left/Right arrows resize width (Shift = 1mm)',
+  'Up/Down arrows resize height (Shift = 1mm)',
+  'Alt + Up/Down resize depth',
   'Space toggles turntable',
 ];
 

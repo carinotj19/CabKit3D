@@ -1,7 +1,7 @@
-﻿export const PRICING_PRESETS = {
+export const PRICING_PRESETS = {
   US_STD: {
     id: 'US_STD',
-    label: 'US · USD standard',
+    label: 'US - USD standard',
     currency: 'USD',
     currencySymbol: '$',
     exchangeRate: 1,
@@ -11,9 +11,9 @@
   },
   EU_STD: {
     id: 'EU_STD',
-    label: 'EU · EUR',
+    label: 'EU - EUR',
     currency: 'EUR',
-    currencySymbol: '€',
+    currencySymbol: 'EUR',
     exchangeRate: 0.92,
     materialMultiplier: 1.05,
     laborMultiplier: 1.1,
