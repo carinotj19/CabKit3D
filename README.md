@@ -2,6 +2,9 @@
 
 CabKit3D is a Vite + React + @react-three/fiber configurator for parametric cabinets. It focuses on fast millimeter-level tweaks, lightweight visuals, and deterministic exports (SKU JSON, BOM CSV, and GLB) you can plug into pricing or manufacturing flows.
 
+## Preview
+https://carinotj19.github.io/CabKit3D/
+
 ## Highlights
 - Dimension, construction, and hardware controls: width/height/depth, panel/back/door thickness, shelves, gaps, door count, hinge side, handle type (bar/knob/D-pull/recessed/none), placement (top/middle/bottom), and orientation (horizontal/vertical/depth).
 - Real-time scene options: exploded slider, turntable, blueprint mode, low-power toggle, reset-view button, and instanced meshes with hinge and dimension annotations.
